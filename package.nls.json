@@ -1,0 +1,13 @@
+{
+  "displayName": "IDE-LSP for MCP",
+  "description": "Expose the code intelligence capabilities of the IDE as callable tool interfaces through the MCP (Model Context Protocol).",
+  "command.showStatus": "IDE-LSP-MCP: Show Status",
+  "command.reconnect": "IDE-LSP-MCP: Reconnect",
+  "command.restartServer": "IDE-LSP-MCP: Restart MCP Server",
+  "config.title": "IDE-LSP for MCP",
+  "config.port.description": "MCP server port",
+  "config.autoStart.description": "Auto start server when VSCode starts",
+  "config.timeout.description": "Request timeout (milliseconds)",
+  "config.pageSize.description": "Page size",
+  "config.enableDebug.description": "Enable debug mode"
+}

@@ -1,7 +1,7 @@
 {
   "name": "ide-lsp-for-mcp",
-  "displayName": "IDE-LSP for MCP",
-  "description": "Expose the code intelligence capabilities of the IDE as callable tool interfaces through the MCP (Model Context Protocol).",
+  "displayName": "%displayName%",
+  "description": "%description%",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.109.0"
@@ -9,15 +9,55 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "ide-lsp-for-mcp.helloWorld",
-        "title": "Hello World"
+        "command": "ide-lsp-mcp.showStatus",
+        "title": "%command.showStatus%"
+      },
+      {
+        "command": "ide-lsp-mcp.reconnect",
+        "title": "%command.reconnect%"
+      },
+      {
+        "command": "ide-lsp-mcp.restartServer",
+        "title": "%command.restartServer%"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "%config.title%",
+      "properties": {
+        "ide-lsp-mcp.port": {
+          "type": "number",
+          "default": 53122,
+          "description": "%config.port.description%"
+        },
+        "ide-lsp-mcp.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.autoStart.description%"
+        },
+        "ide-lsp-mcp.timeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "%config.timeout.description%"
+        },
+        "ide-lsp-mcp.pageSize": {
+          "type": "number",
+          "default": 50,
+          "description": "%config.pageSize.description%"
+        },
+        "ide-lsp-mcp.enableDebug": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.enableDebug.description%"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
@@ -31,18 +71,39 @@
     "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "test-mcp": "mocha ./src/test/mcp.test.ts",
+    "server:build": "node esbuild.js --server-only",
+    "server:start": "node dist/server/main.js --storage c:\\Users\\Learn\\AppData\\Roaming\\Code\\User\\globalStorage\\undefined_publisher.ide-lsp-for-mcp",
+    "server:dev": "node esbuild.js --server-only && pnpm run server:start"
   },
   "devDependencies": {
-    "@types/vscode": "^1.109.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "typescript-eslint": "^8.54.0",
-    "eslint": "^9.39.2",
-    "esbuild": "^0.27.2",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.9.3",
+    "@types/vscode": "^1.109.0",
+    "@types/ws": "^8.5.10",
     "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "chai": "^6.2.2",
+    "esbuild": "^0.27.2",
+    "eslint": "^9.39.2",
+    "mocha": "^11.7.5",
+    "npm-run-all": "^4.1.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@vscode/l10n": "^0.0.18",
+    "chokidar": "^5.0.0",
+    "ws": "^8.16.0"
+  },
+  "l10n": "./l10n",
+  "mocha": {
+    "require": "ts-node/register",
+    "loader": "ts-node/esm",
+    "ui": "tdd",
+    "timeout": 5000
   }
 }

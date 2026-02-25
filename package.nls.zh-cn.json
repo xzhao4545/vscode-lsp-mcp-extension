@@ -1,0 +1,13 @@
+{
+  "displayName": "IDE-LSP for MCP",
+  "description": "通过 MCP (Model Context Protocol) 协议将 IDE 的代码智能能力暴露为可调用的工具接口。",
+  "command.showStatus": "IDE-LSP-MCP: 显示状态",
+  "command.reconnect": "IDE-LSP-MCP: 重新连接",
+  "command.restartServer": "IDE-LSP-MCP: 重新启动MCP服务器",
+  "config.title": "IDE-LSP for MCP",
+  "config.port.description": "MCP 服务器端口",
+  "config.autoStart.description": "VSCode 启动时自动启动服务",
+  "config.timeout.description": "请求超时时间 (毫秒)",
+  "config.pageSize.description": "分页大小",
+  "config.enableDebug.description": "启用调试模式"
+}
