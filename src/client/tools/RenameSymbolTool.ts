@@ -1,0 +1,73 @@
+import * as vscode from 'vscode';
+import { BaseTool } from './BaseTool';
+import { StringBuilder } from './StringBuilder';
+
+interface RenameEdit {
+  range: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  };
+  newText: string;
+}
+
+interface RenameSymbolResult {
+  changes: Record<string, RenameEdit[]>;
+}
+
+/**
+ * RenameSymbol - 重命名
+ */
+export class RenameSymbolTool extends BaseTool {
+  readonly name = 'renameSymbol';
+
+  async execute(args: Record<string, unknown>): Promise<RenameSymbolResult> {
+    const uri = this.resolveUri(args.projectPath as string, args.filePath as string);
+    const position = new vscode.Position((args.line as number) - 1, args.character as number);
+    const newName = args.newName as string;
+    const edit = await vscode.commands.executeCommand<vscode.WorkspaceEdit>(
+      'vscode.executeDocumentRenameProvider',
+      uri,
+      position,
+      newName
+    );
+    if (!edit) {
+      return { changes: {} };
+    }
+    const changes: Record<string, RenameEdit[]> = {};
+    for (const [fileUri, edits] of edit.entries()) {
+      changes[fileUri.fsPath] = edits.map(e => ({
+        range: {
+          start: { line: e.range.start.line + 1, character: e.range.start.character },
+          end: { line: e.range.end.line + 1, character: e.range.end.character }
+        },
+        newText: e.newText
+      }));
+    }
+    return { changes };
+  }
+
+  format(result: RenameSymbolResult): string {
+    const sb = new StringBuilder();
+    sb.appendLine('## Rename Symbol');
+    sb.appendLine();
+
+    const files = Object.keys(result.changes);
+    if (files.length === 0) {
+      sb.appendLine(this.emptyContent('No rename edits generated'));
+      return sb.toString();
+    }
+
+    sb.appendLine(`**Files affected:** ${files.length}`);
+    sb.appendLine();
+
+    for (const file of files) {
+      const edits = result.changes[file];
+      sb.appendLine(`### \`${file}\``);
+      for (const edit of edits) {
+        sb.appendLine(`- L${edit.range.start.line}:${edit.range.start.character} → \`${edit.newText}\``);
+      }
+      sb.appendLine();
+    }
+    return sb.toString();
+  }
+}

@@ -77,6 +77,12 @@ export class WebSocketServer {
     this.restartCallback = callback;
   }
 
+  close(){
+    this.wss.clients.forEach((ws) => {
+      ws.close();
+    });
+  }
+
   /**
    * 处理重启请求
    */

@@ -5,7 +5,6 @@
 import * as vscode from 'vscode';
 import * as l10n from '@vscode/l10n';
 import { ServerManager } from './client/ServerManager';
-import { ServerConnection } from './client/ServerConnection';
 import { TaskExecutor } from './client/TaskExecutor';
 import { ConnectionManager, ConnectionState } from './client/ConnectionManager';
 import { NotificationManager } from './client/NotificationManager';
@@ -31,6 +30,7 @@ export async function activate(context: vscode.ExtensionContext) {
   connectionManager = new ConnectionManager(
     serverManager.getStateFile(),
     notifications,
+    taskExecutor.executeWithFormat.bind(taskExecutor),
     0  // 端口待确定
   );
   // 监听连接状态变化
@@ -43,26 +43,11 @@ export async function activate(context: vscode.ExtensionContext) {
   try {
     const port = await serverManager.ensureServerRunning();
     connectionManager.updatePort(port);
-    const connected = await connectionManager.connect();
-    if (connected) {
-      setupConnection();
-    }
+    await connectionManager.connect();
   } catch (error) {
     console.error('[Extension] Failed to start:', error);
     vscode.window.showWarningMessage(l10n.t('MCP Server: {0}', (error as Error).message));
   }
-}
-
-/**
- * 设置连接回调
- */
-function setupConnection(): void {
-  const connection = connectionManager.getConnection();
-  if (!connection) {return;}
-
-  connection.onTask(async (task) => {
-    return taskExecutor.execute(task);
-  });
 }
 
 /**
@@ -116,7 +101,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
         const port = await serverManager.ensureServerRunning();
         connectionManager.updatePort(port);
         await connectionManager.manualReconnect();
-        setupConnection();
       } catch (error) {
         vscode.window.showErrorMessage(l10n.t('重连失败: {0}', (error as Error).message));
       }
@@ -140,7 +124,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
         const port = await serverManager.forceRestart();
         connectionManager.updatePort(port);
         await connectionManager.connect();
-        setupConnection();
       } catch (error) {
         vscode.window.showErrorMessage(l10n.t('重启失败: {0}', (error as Error).message));
       }

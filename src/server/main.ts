@@ -56,6 +56,7 @@ const stateFile = new StateFile(storagePath);
 const fileLock = new FileLock(lockPath);
 
 let httpServer: http.Server | null = null;
+let wsServer: WebSocketServer|null=null;
 let stateFileWatcher: StateFileWatcher | null = null;
 let taskManager: TaskManager | null = null;
 
@@ -109,7 +110,7 @@ async function startServer(): Promise<void> {
   });
 
   // 创建 WebSocket 服务器
-  const wsServer = new WebSocketServer(httpServer, registry, taskManager, shutdownManager);
+  wsServer = new WebSocketServer(httpServer, registry, taskManager, shutdownManager);
   
   // 设置重启处理
   wsServer.onRestart(handleRestartRequest);
@@ -192,9 +193,8 @@ async function shutdown(): Promise<void> {
   taskManager?.cleanup();
   
   if (httpServer) {
-    httpServer.close(() => {
-      process.exit(0);
-    });
+    wsServer?.close();
+    httpServer.close(()=> process.exit(0));
   } else {
     process.exit(0);
   }

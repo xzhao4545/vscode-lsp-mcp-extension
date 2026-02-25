@@ -10,10 +10,10 @@ import { MAX_DEBUG_ENTRIES } from '../shared/constants';
 
 export class ServerConnection {
   private ws: WebSocket | null = null;
-  private windowId: string | null = null;
   private debugEntries: DebugLogEntry[] = [];
   private onTaskCallback: ((task: TaskMessage) => Promise<unknown>) | null = null;
   private onDebugLogCallback: (() => void) | null = null;
+  private onCloseCallback: (() => void) | null = null;
 
   constructor(private port: number) {}
 
@@ -30,8 +30,14 @@ export class ServerConnection {
       });
 
       this.ws.on('message', (data) => this.handleMessage(data.toString()));
-      this.ws.on('close', () => this.handleClose());
-      this.ws.on('error', reject);
+      this.ws.on('close', (code, reason) => {
+        console.log(`ws closed code:${code} reason:${reason}`);
+        this.handleClose();
+      });
+      this.ws.on('error', (error) => {
+        console.log(`errpr ${error.message}`);
+        reject();
+      });
     });
   }
   /**
@@ -58,6 +64,13 @@ export class ServerConnection {
   onDebugLog(callback: () => void): void {
     this.onDebugLogCallback = callback;
   }
+
+  /**
+   * 设置连接关闭回调
+   */
+  onClose(callback: () => void): void {
+    this.onCloseCallback = callback;
+  }
   /**
    * 处理消息
    */
@@ -66,7 +79,6 @@ export class ServerConnection {
       const msg = JSON.parse(data) as ServerMessage;
       switch (msg.type) {
         case 'registered':
-          this.windowId = msg.windowId;
           console.log(`[Connection] Registered as ${msg.windowId}`);
           break;
         case 'task':
@@ -94,7 +106,7 @@ export class ServerConnection {
       this.send({
         type: 'error',
         requestId: msg.requestId,
-        error: { message: (error as Error).message }
+        error: { message: (error as Error).stack }
       });
     }
   }
@@ -127,7 +139,7 @@ export class ServerConnection {
   private handleClose(): void {
     console.log('[Connection] WebSocket closed');
     this.ws = null;
-    this.windowId = null;
+    this.onCloseCallback?.();
   }
   /**
    * 发送消息

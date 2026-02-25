@@ -5,9 +5,9 @@
  */
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
-const MCP_SERVER_URL = 'http://127.0.0.1:53122/sse';
+const MCP_SERVER_URL = 'http://127.0.0.1:53122/mcp';
 
 export interface McpToolResult {
   content: string;
@@ -22,7 +22,7 @@ export interface TestCase {
 
 export class McpTestClient {
   private client: Client;
-  private transport: SSEClientTransport | null = null;
+  private transport: StreamableHTTPClientTransport | null = null;
 
   constructor() {
     this.client = new Client({
@@ -40,8 +40,10 @@ export class McpTestClient {
    */
   async isServerRunning(): Promise<boolean> {
     try {
-      const response = await fetch(`${MCP_SERVER_URL}/health`, {
-        method: 'GET',
+      const response = await fetch(MCP_SERVER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'ping', id: 1 }),
         signal: AbortSignal.timeout(2000)
       });
       return response.status === 200;
@@ -54,7 +56,7 @@ export class McpTestClient {
    * 连接到 MCP 服务器
    */
   async connect(): Promise<void> {
-    this.transport = new SSEClientTransport(new URL(MCP_SERVER_URL));
+    this.transport = new StreamableHTTPClientTransport(new URL(MCP_SERVER_URL));
     await this.client.connect(this.transport);
     console.log('Connected to MCP server');
   }

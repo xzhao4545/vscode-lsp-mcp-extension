@@ -9,7 +9,7 @@ export const DEFAULT_PORT = 53122;
 export const DEFAULT_TIMEOUT = 30000;
 
 /** 服务器关闭延迟 (毫秒) */
-export const SHUTDOWN_DELAY = 10000;
+export const SHUTDOWN_DELAY = 30000;
 
 /** 分页大小 */
 export const DEFAULT_PAGE_SIZE = 50;
@@ -24,10 +24,14 @@ export const SERVER_STATE_FILE = 'server.json';
 export const HEALTH_PATH = '/health';
 
 /** SSE 路径 */
+/** SSE 路径 (已弃用，保留兼容) */
 export const SSE_PATH = '/sse';
 
-/** 消息路径 */
+/** 消息路径 (已弃用，保留兼容) */
 export const MESSAGE_PATH = '/message';
+
+/** MCP 端点路径 (新 Streamable HTTP API) */
+export const MCP_ENDPOINT = '/mcp';
 
 /** WebSocket 路径 */
 export const WS_PATH = '/ws';

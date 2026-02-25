@@ -12,6 +12,9 @@
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
+			"env": {
+				"NODE_OPTIONS":"--enable-source-maps"
+			},
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			],
@@ -25,7 +28,8 @@
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"env": {
-				"IDE_LSP_MCP_DISABLE_AUTO_START": "true"
+				"IDE_LSP_MCP_DISABLE_AUTO_START": "true",
+				"NODE_OPTIONS":"--enable-source-maps"
 			},
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"

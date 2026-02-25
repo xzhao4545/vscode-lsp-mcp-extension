@@ -2,10 +2,10 @@
  * 连接管理器 - 管理客户端与服务器的连接、重连逻辑
  */
 
-import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ServerConnection } from './ServerConnection';
 import { NotificationManager } from './NotificationManager';
+import type { TaskMessage } from '../shared/protocol';
 import { StateFile } from '../shared/stateFile';
 import { StateUtils } from '../shared/types';
 import {
@@ -45,6 +45,7 @@ export class ConnectionManager {
   constructor(
     private stateFile: StateFile,
     private notifications: NotificationManager,
+    private onTaskCallback: (task:TaskMessage) => Promise<unknown>,
     initialPort: number
   ) {
     this.port = initialPort;
@@ -92,7 +93,7 @@ export class ConnectionManager {
     try {
       this.connection = new ServerConnection(this.port);
       await this.connection.connect();
-      
+      this.connection.onTask(this.onTaskCallback);
       this.setState('connected');
       this.reconnectAttempts = 0;
       this.stopStatusWatching();
@@ -114,12 +115,7 @@ export class ConnectionManager {
    */
   private setupCloseHandler(): void {
     if (!this.connection) {return;}
-    
-    const originalDisconnect = this.connection.disconnect.bind(this.connection);
-    this.connection.disconnect = () => {
-      originalDisconnect();
-      this.handleDisconnect();
-    };
+    this.connection.onClose(() => this.handleDisconnect());
   }
 
   /**

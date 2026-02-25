@@ -1,272 +1,63 @@
 /**
  * MCP 服务器 - HTTP/SSE 接口实现
+ * 使用新的 McpServer + StreamableHTTPServerTransport API
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { McpServer as McpServerSDK } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import * as http from 'http';
+import * as crypto from 'crypto';
 import { ClientRegistry } from './ClientRegistry';
 import { TaskManager } from './TaskManager';
 import type { DebugLogEntry } from '../shared/types';
-import { HEALTH_PATH, SSE_PATH, MESSAGE_PATH } from '../shared/constants';
+import { HEALTH_PATH } from '../shared/constants';
+import toolSCHEMAS, { type ToolName } from './MCPTools';
 
-/** MCP 工具定义 */
-const TOOLS = [
-  {
-    name: 'listOpenProjects',
-    description: 'List all open workspaces and their directories',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string', description: 'Optional current directory path' }
-      }
-    }
-  },
-  {
-    name: 'goToDefinition',
-    description: 'Jump to symbol definition location',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string', description: 'Project directory absolute path' },
-        filePath: { type: 'string', description: 'File path (absolute or relative)' },
-        line: { type: 'number', description: 'Line number (1-based)' },
-        character: { type: 'number', description: 'Column offset (0-based)' },
-        symbolName: { type: 'string', description: 'Optional symbol name for validation' }
-      },
-      required: ['projectPath', 'filePath', 'line', 'character']
-    }
-  },
-  {
-    name: 'findReferences',
-    description: 'Find all references to a symbol',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' },
-        line: { type: 'number' },
-        character: { type: 'number' },
-        page: { type: 'number', description: 'Page number (1-based)' }
-      },
-      required: ['projectPath', 'filePath', 'line', 'character']
-    }
-  },
-  {
-    name: 'hover',
-    description: 'Get hover information for a symbol',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' },
-        line: { type: 'number' },
-        character: { type: 'number' }
-      },
-      required: ['projectPath', 'filePath', 'line', 'character']
-    }
-  },
-  {
-    name: 'getFileStruct',
-    description: 'Get all symbol structures in a file',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' }
-      },
-      required: ['projectPath', 'filePath']
-    }
-  },
-  {
-    name: 'searchSymbolInWorkspace',
-    description: 'Search symbols in workspace',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        query: { type: 'string', description: 'Search keyword' },
-        symbolType: { type: 'string', enum: ['class', 'method', 'field', 'all'] },
-        page: { type: 'number' }
-      },
-      required: ['projectPath', 'query']
-    }
-  },
-  {
-    name: 'goToImplementation',
-    description: 'Find implementations of interface/abstract class',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' },
-        line: { type: 'number' },
-        character: { type: 'number' },
-        page: { type: 'number' }
-      },
-      required: ['projectPath', 'filePath', 'line', 'character']
-    }
-  },
-  {
-    name: 'incomingCalls',
-    description: 'Find callers of a method',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' },
-        line: { type: 'number' },
-        page: { type: 'number' }
-      },
-      required: ['projectPath', 'filePath', 'line']
-    }
-  },
-  {
-    name: 'renameSymbol',
-    description: 'Prepare rename edits',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' },
-        line: { type: 'number' },
-        character: { type: 'number' },
-        symbolName: { type: 'string' },
-        newName: { type: 'string' }
-      },
-      required: ['projectPath', 'filePath', 'line', 'character', 'newName']
-    }
-  },
-  {
-    name: 'getDiagnostics',
-    description: 'Get file diagnostics (warnings, errors)',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' },
-        severity: { type: 'string' },
-        page: { type: 'number' }
-      },
-      required: ['projectPath', 'filePath']
-    }
-  },
-  {
-    name: 'getDefinitionText',
-    description: 'Get symbol definition text',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' },
-        line: { type: 'number' },
-        character: { type: 'number' },
-        symbolName: { type: 'string' }
-      },
-      required: ['projectPath', 'filePath', 'line', 'character']
-    }
-  },
-  {
-    name: 'syncFiles',
-    description: 'Refresh VSCode index, sync external file changes',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        paths: { type: 'array', items: { type: 'string' } }
-      },
-      required: ['projectPath']
-    }
-  },
-  {
-    name: 'searchFiles',
-    description: 'Search files by name regex',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        pattern: { type: 'string', description: 'Filename regex' },
-        directory: { type: 'string' },
-        recursive: { type: 'boolean' },
-        page: { type: 'number' }
-      },
-      required: ['projectPath', 'pattern']
-    }
-  },
-  {
-    name: 'moveFile',
-    description: 'Move file/directory, auto-update references',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        sourcePath: { type: 'string' },
-        targetDir: { type: 'string' }
-      },
-      required: ['projectPath', 'sourcePath', 'targetDir']
-    }
-  },
-  {
-    name: 'deleteFile',
-    description: 'Safely delete file, check references',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' },
-        force: { type: 'boolean' }
-      },
-      required: ['projectPath', 'filePath']
-    }
-  },
-  {
-    name: 'getScopeParent',
-    description: 'Find parent symbol at position',
-    inputSchema: {
-      type: 'object' as const,
-      properties: {
-        projectPath: { type: 'string' },
-        filePath: { type: 'string' },
-        line: { type: 'number' }
-      },
-      required: ['projectPath', 'filePath', 'line']
-    }
-  }
-];
+/** MCP 端点路径 */
+const MCP_ENDPOINT = '/mcp';
 
 export class McpServer {
-  private server: Server;
-  private transports = new Map<string, SSEServerTransport>();
+  /** 存储每个 session 的 transport 和 server 实例 */
+  private sessions = new Map<string, {
+    server: McpServerSDK;
+    transport: StreamableHTTPServerTransport;
+  }>();
 
   constructor(
     private registry: ClientRegistry,
     private taskManager: TaskManager
-  ) {
-    this.server = new Server(
+  ) {}
+
+  /**
+   * 创建新的 MCP Server 实例并注册工具
+   */
+  private createMcpServer(): McpServerSDK {
+    const server = new McpServerSDK(
       { name: 'ide-lsp-mcp', version: '0.0.1' },
       { capabilities: { tools: {} } }
     );
-    this.setupHandlers();
-  }
 
-  private setupHandlers(): void {
-    // 列出工具
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: TOOLS
-    }));
+    // 注册所有工具 (使用新的 registerTool API + Zod schema)
+    for (const [name, tool] of Object.entries(toolSCHEMAS)) {
+      const toolName = name as ToolName;
+      server.registerTool(
+        toolName,
+        {
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+        },
+        async (args: Record<string, unknown>) => {
+          const result = await this.handleToolCall(toolName, args as Record<string, unknown>);
+          const res= {
+            content: [{ type: 'text' as const, text: typeof result==='string'?result:JSON.stringify(result, null, 2) }],
+            isError: true
+          };
+          return res;
+        }
+      );
+    }
 
-    // 调用工具
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
-      const result = await this.handleToolCall(name, args as Record<string, unknown>);
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-      };
-    });
+    return server;
   }
 
   /**
@@ -382,32 +173,9 @@ export class McpServer {
       return;
     }
 
-    // SSE 连接
-    if (url.pathname === SSE_PATH && req.method === 'GET') {
-      const transport = new SSEServerTransport(MESSAGE_PATH, res);
-      const sessionId = transport.sessionId;
-      this.transports.set(sessionId, transport);
-
-      res.on('close', () => {
-        this.transports.delete(sessionId);
-      });
-
-      await this.server.connect(transport);
-      return;
-    }
-
-    // MCP 消息
-    if (url.pathname === MESSAGE_PATH && req.method === 'POST') {
-      // 找到对应的 transport
-      const sessionId = url.searchParams.get('sessionId');
-      if (sessionId && this.transports.has(sessionId)) {
-        const transport = this.transports.get(sessionId)!;
-        await transport.handlePostMessage(req, res);
-        return;
-      }
-
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Invalid session' }));
+    // MCP 端点 - 处理所有 MCP 请求
+    if (url.pathname === MCP_ENDPOINT) {
+      await this.handleMcpRequest(req, res);
       return;
     }
 
@@ -415,7 +183,55 @@ export class McpServer {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Not found' }));
   }
-}
 
-// 需要 crypto 模块
-import * as crypto from 'crypto';
+  /**
+   * 处理 MCP 请求 (Streamable HTTP)
+   */
+  private async handleMcpRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    // 从请求头获取 session ID
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+    // 如果有 session ID，尝试复用现有 session
+    if (sessionId && this.sessions.has(sessionId)) {
+      const session = this.sessions.get(sessionId)!;
+      await session.transport.handleRequest(req, res);
+      return;
+    }
+
+    // 创建新的 session
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID(),
+    });
+
+    const server = this.createMcpServer();
+
+    // 连接 server 和 transport
+    await server.connect(transport);
+
+    // 处理请求
+    await transport.handleRequest(req, res);
+
+    // 存储 session（如果 transport 生成了 session ID）
+    const newSessionId = transport.sessionId;
+    if (newSessionId) {
+      this.sessions.set(newSessionId, { server, transport });
+
+      // 设置清理回调
+      transport.onclose = () => {
+        this.sessions.delete(newSessionId);
+        server.close();
+      };
+    }
+  }
+
+  /**
+   * 关闭所有 session
+   */
+  async close(): Promise<void> {
+    for (const [sessionId, session] of this.sessions) {
+      await session.transport.close();
+      await session.server.close();
+      this.sessions.delete(sessionId);
+    }
+  }
+}

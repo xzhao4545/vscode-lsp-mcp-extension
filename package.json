@@ -74,7 +74,7 @@
     "test": "vscode-test",
     "test-mcp": "mocha ./src/test/mcp.test.ts",
     "server:build": "node esbuild.js --server-only",
-    "server:start": "node dist/server/main.js --storage c:\\Users\\Learn\\AppData\\Roaming\\Code\\User\\globalStorage\\undefined_publisher.ide-lsp-for-mcp",
+    "server:start": "node --enable-source-maps dist/server/main.js --storage c:\\Users\\Learn\\AppData\\Roaming\\Code\\User\\globalStorage\\undefined_publisher.ide-lsp-for-mcp",
     "server:dev": "node esbuild.js --server-only && pnpm run server:start"
   },
   "devDependencies": {
@@ -97,7 +97,8 @@
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@vscode/l10n": "^0.0.18",
     "chokidar": "^5.0.0",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "zod": "^4.3.6"
   },
   "l10n": "./l10n",
   "mocha": {
