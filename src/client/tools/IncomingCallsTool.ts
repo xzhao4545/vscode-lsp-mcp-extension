@@ -3,6 +3,8 @@ import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
 import { PaginationHelper } from '../utils/PaginationHelper';
 import { ContextHelper } from '../utils/ContextHelper';
+import { GetScopeParentTool } from './GetScopeParentTool';
+import { SymbolValidator } from '../utils/SymbolValidator';
 
 interface IncomingCall {
   uri: string;
@@ -16,6 +18,7 @@ interface IncomingCallsResult {
   incomingCalls: IncomingCall[];
   hasMore: boolean;
   total: number;
+  error?: string;
 }
 
 /**
@@ -26,8 +29,15 @@ export class IncomingCallsTool extends BaseTool {
 
   async execute(args: Record<string, unknown>): Promise<IncomingCallsResult> {
     const uri = this.resolveUri(args.projectPath as string, args.filePath as string);
-    const position = new vscode.Position((args.line as number) - 1, 16);
+    const position = new vscode.Position((args.line as number) - 1, (args.character as number));
+    const symbolName = args.symbolName as string;
 
+    // 验证 symbol
+    const validationError = await SymbolValidator.validate(uri, position, symbolName);
+    if (validationError) {
+      return { incomingCalls: [], hasMore: false, total: 0, error: validationError };
+    }
+    
     const items = await vscode.commands.executeCommand<vscode.CallHierarchyItem[]>(
       'vscode.prepareCallHierarchy',
       uri,
@@ -58,12 +68,23 @@ export class IncomingCallsTool extends BaseTool {
   }
 
   format(result: IncomingCallsResult, args: Record<string, unknown>): string {
+    if (result.error) {
+      return this.emptyContent(result.error);
+    }
     if (result.incomingCalls.length === 0) {
       return this.emptyContent('No incoming calls found');
     }
 
     const page = (args.page as number) || 1;
     const paginated = PaginationHelper.paginate(result.incomingCalls, page);
+
+    // 按 URI 聚合
+    const grouped = new Map<string, IncomingCall[]>();
+    for (const cal of paginated.items) {
+      const cals = grouped.get(cal.uri) || [];
+      cals.push(cal);
+      grouped.set(cal.uri, cals);
+    }
 
     return PaginationHelper.wrapPaginated(
       'Incoming Calls',
@@ -72,12 +93,16 @@ export class IncomingCallsTool extends BaseTool {
       paginated.totalItems,
       paginated.hasMore,
       (sb: StringBuilder) => {
-        for (const call of paginated.items) {
-          sb.appendLine(`### ${call.name}`);
-          sb.appendLine(`\`${call.uri}\`:${call.line}`);
-          sb.appendLine('```');
-          sb.appendLine(ContextHelper.formatContext(call.context));
-          sb.appendLine('```');
+        for (const [uri, calls] of Array.from(grouped.entries())) {
+          sb.appendLine(`## \`${uri}\``);
+          for (const call of calls) {
+            sb.appendLine(`### ${call.name}`);
+            sb.appendLine(`**Location ${call.line}:${call.character}**`);
+            sb.appendLine('```');
+            sb.appendLine(ContextHelper.formatContext(call.context));
+            sb.appendLine('```');
+            sb.appendLine();
+          }
           sb.appendLine();
         }
       }

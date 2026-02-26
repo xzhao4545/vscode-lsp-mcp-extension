@@ -2,8 +2,9 @@
  * 客户端注册表 - 管理所有连接的 VSCode 窗口
  */
 
-import type { WebSocket } from 'ws';
-import type { Folder, ProjectInfo } from '../shared/types';
+import type { WebSocket } from "ws";
+import type { Folder, ProjectInfo } from "../shared/types";
+import { normalize, resolve } from "path";
 
 /** 客户端信息 */
 export interface ClientInfo {
@@ -21,19 +22,29 @@ export class ClientRegistry {
    * 注册窗口
    */
   register(windowId: string, ws: WebSocket, folders: Folder[]): void {
-    this.clients.set(windowId, { 
-      ws, 
-      windowId, 
-      folders, 
-      connectedAt: Date.now() 
+    //格式化路径
+    folders=folders.map(f => {
+      f.path=ClientRegistry.normalizePath(f.path);
+      return f;
+    });
+    this.clients.set(windowId, {
+      ws,
+      windowId,
+      folders,
+      connectedAt: Date.now(),
     });
 
     // 建立 projectPath 索引
     for (const folder of folders) {
-      this.projectIndex.set(this.normalizePath(folder.path), windowId);
+      this.projectIndex.set(
+        folder.path,
+        windowId
+      );
     }
 
-    console.log(`[Registry] Window ${windowId} registered with ${folders.length} folders`);
+    console.log(
+      `[Registry] Window ${windowId} registered with ${folders.length} folders`
+    );
   }
 
   /**
@@ -44,7 +55,7 @@ export class ClientRegistry {
     if (client) {
       // 清理 projectPath 索引
       for (const folder of client.folders) {
-        this.projectIndex.delete(this.normalizePath(folder.path));
+        this.projectIndex.delete(folder.path);
       }
       this.clients.delete(windowId);
       console.log(`[Registry] Window ${windowId} unregistered`);
@@ -55,7 +66,7 @@ export class ClientRegistry {
    * 根据项目路径查找客户端
    */
   findByProjectPath(projectPath: string): ClientInfo | undefined {
-    const normalized = this.normalizePath(projectPath);
+    const normalized = ClientRegistry.normalizePath(projectPath);
     const windowId = this.projectIndex.get(normalized);
     return windowId ? this.clients.get(windowId) : undefined;
   }
@@ -90,7 +101,14 @@ export class ClientRegistry {
   /**
    * 路径标准化
    */
-  private normalizePath(p: string): string {
-    return p.toLowerCase().replace(/\\/g, '/');
+  static normalizePath(p: string): string {
+    let normalized=normalize(resolve(p));
+    // 3. Windows 盘符统一大写
+    if (process.platform === 'win32') {
+        normalized = normalized.replace(/^([a-zA-Z]):/, (match, drive) => {
+            return drive.toUpperCase() + ':';
+        });
+    }
+    return normalized;
   }
 }

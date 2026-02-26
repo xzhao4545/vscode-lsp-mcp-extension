@@ -83,7 +83,7 @@ export class FindReferencesTool extends BaseTool {
       paginated.hasMore,
       (sb: StringBuilder) => {
         for (const [uri, refs] of Array.from(grouped.entries())) {
-          sb.appendLine(`### \`${uri}\``);
+          sb.appendLine(`## \`${uri}\``);
           for (const ref of refs) {
             sb.appendLine(`**Location ${ref.line}:${ref.character}**`);
             sb.appendLine('```');

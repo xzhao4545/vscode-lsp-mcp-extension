@@ -29,9 +29,9 @@ export const TOOL_SCHEMAS = {
       'As a result, they offer better performance compared to other LSP instances or text-based searches (e.g., grep).\n' +
       'When performing operations such as symbol lookup, rename, find references, or go to definition, always prioritize methods that start with "IDE-" instead of using text search or launching a new LSP service.\n' +
       'In addition, all "IDE-" methods that include a page parameter support caching. When requesting the next page, keep all other parameters unchanged to ensure cache hits and reduce the number of queries.</important>\n\n' +
-      'listOpenProjects: List all currently open project paths in the IDE. Use this to discover available projects.',
+      'listOpenProjects: List all currently open project paths (workspace folders) in the IDE.',
     inputSchema: z.object({
-      projectPath: z.string().optional().describe('Optional current directory path'),
+      projectPath: z.string().optional().describe('Optional, used to query all project paths opened in the workspace corresponding to the specified project path.'),
     }),
   },
 
@@ -105,8 +105,10 @@ export const TOOL_SCHEMAS = {
     inputSchema: z.object({
       projectPath,
       filePath,
-      line: z.number().describe('Line number (1-based), can be method definition or inside method body'),
+      line,
+      character,
       page,
+      symbolName,
     }),
   },
 

@@ -49,7 +49,7 @@ export class ConnectionManager {
   constructor(
     private stateFile: StateFile,
     private notifications: NotificationManager,
-    private onTaskCallback: (task:TaskMessage) => Promise<unknown>,
+    private onTaskCallback: (task:TaskMessage) => Promise<string>,
     initialPort: number,
     debugLogStore?: DebugLogStore
   ) {
@@ -280,13 +280,13 @@ export class ConnectionManager {
     return async (task: TaskMessage): Promise<unknown> => {
       const startTime = Date.now();
       let success = true;
-      let result: unknown;
+      let result: string='';
       try {
         result = await this.onTaskCallback(task);
         return result;
       } catch (error) {
         success = false;
-        result = { error: (error as Error).message };
+        result = (error as Error).stack??(error as Error).message;
         throw error;
       } finally {
         if (Config.getEnableDebug() && this.debugLogStore) {
@@ -294,7 +294,7 @@ export class ConnectionManager {
             timestamp: startTime,
             tool: task.tool,
             args: task.args,
-            result: JSON.stringify(result),
+            result: result,
             duration: Date.now() - startTime,
             success
           };

@@ -32,24 +32,7 @@ export class GetScopeParentTool extends BaseTool {
       return { found: false };
     }
 
-    const findParent = (
-      syms: vscode.DocumentSymbol[],
-      targetLine: number
-    ): vscode.DocumentSymbol | null => {
-      for (const s of syms) {
-        if (
-          GetScopeParentTool.hasScope(s) &&
-          s.range.start.line <= targetLine &&
-          s.range.end.line >= targetLine
-        ) {
-          const child = findParent(s.children || [], targetLine);
-          return child || s;
-        }
-      }
-      return null;
-    };
-
-    const parent = findParent(symbols, line);
+    const parent = GetScopeParentTool.findParent(symbols, line);
     if (!parent) {
       return { found: false };
     }
@@ -66,6 +49,29 @@ export class GetScopeParentTool extends BaseTool {
       ),
     };
   }
+  static findParent = (
+    syms: vscode.DocumentSymbol[],
+    targetLine: number,
+    targetCharacter:number=0
+  ): vscode.DocumentSymbol | null => {
+    for (const s of syms) {
+      if (
+        GetScopeParentTool.hasScope(s) &&
+        s.range.start.line <= targetLine &&
+        s.range.end.line >= targetLine &&
+        s.range.start.character <= targetCharacter &&
+        s.range.end.character >= targetCharacter
+      ) {
+        const child = GetScopeParentTool.findParent(
+          s.children || [],
+          targetLine
+        );
+        return child || s;
+      }
+    }
+    return null;
+  };
+
   private static scopeKind = new Set([
     vscode.SymbolKind.Class,
     vscode.SymbolKind.Function,

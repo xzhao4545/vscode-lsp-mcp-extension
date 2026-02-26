@@ -72,7 +72,7 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
       paginated.hasMore,
       (sb: StringBuilder) => {
         for (const [uri, syms] of Array.from(grouped.entries())) {
-          sb.appendLine(`### \`${uri}\``);
+          sb.appendLine(`## \`${uri}\``);
           for (const sym of syms) {
             sb.appendLine(`**${sym.name}** (${sym.kind}) - Location ${sym.line}:${sym.character}`);
             sb.appendLine('```');

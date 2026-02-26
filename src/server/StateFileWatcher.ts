@@ -2,9 +2,9 @@
  * 状态文件监听器 - 服务器端监听状态文件变化
  */
 
-import * as fs from 'fs';
-import { StateFile } from '../shared/stateFile';
-import { StateUtils } from '../shared/types';
+import * as fs from "fs";
+import { StateFile } from "../shared/stateFile";
+import { ServerState, StateUtils } from "../shared/types";
 
 /**
  * 状态文件监听器
@@ -28,7 +28,7 @@ export class StateFileWatcher {
 
     try {
       this.watcher = fs.watch(stateFilePath, async (eventType) => {
-        if (eventType === 'change') {
+        if (eventType === "change") {
           await this.checkShouldShutdown();
         }
       });
@@ -43,14 +43,19 @@ export class StateFileWatcher {
   private async checkShouldShutdown(): Promise<void> {
     try {
       const data = await this.stateFile.read();
-      if (!data) { return; }
+      if (!data) {
+        return;
+      }
       // 情况1: 状态为 stopped，应关闭
       if (StateUtils.isStopped(data.state)) {
         this.onShouldShutdown();
         return;
       }
       // 情况2: 有更新的服务器启动了
-      if (StateUtils.isReady(data.state) && data.startTime > this.myStartTime) {
+      if (
+        (data.state & ServerState.STARTING) !== 0 &&
+        data.startTime > this.myStartTime
+      ) {
         this.onShouldShutdown();
         return;
       }

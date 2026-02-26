@@ -3,24 +3,27 @@
  * 使用新的 McpServer + StreamableHTTPServerTransport API
  */
 
-import { McpServer as McpServerSDK } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import * as http from 'http';
-import * as crypto from 'crypto';
-import { ClientRegistry } from './ClientRegistry';
-import { TaskManager } from './TaskManager';
-import { HEALTH_PATH } from '../shared/constants';
-import toolSCHEMAS, { type ToolName } from './MCPTools';
+import { McpServer as McpServerSDK } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import * as http from "http";
+import * as crypto from "crypto";
+import { ClientRegistry } from "./ClientRegistry";
+import { TaskManager } from "./TaskManager";
+import { HEALTH_PATH } from "../shared/constants";
+import toolSCHEMAS, { type ToolName } from "./MCPTools";
 
 /** MCP 端点路径 */
-const MCP_ENDPOINT = '/mcp';
+const MCP_ENDPOINT = "/mcp";
 
 export class McpServer {
   /** 存储每个 session 的 transport 和 server 实例 */
-  private sessions = new Map<string, {
-    server: McpServerSDK;
-    transport: StreamableHTTPServerTransport;
-  }>();
+  private sessions = new Map<
+    string,
+    {
+      server: McpServerSDK;
+      transport: StreamableHTTPServerTransport;
+    }
+  >();
 
   constructor(
     private registry: ClientRegistry,
@@ -32,7 +35,7 @@ export class McpServer {
    */
   private createMcpServer(): McpServerSDK {
     const server = new McpServerSDK(
-      { name: 'ide-lsp-mcp', version: '0.0.1' },
+      { name: "ide-lsp-mcp", version: "0.0.1" },
       { capabilities: { tools: {} } }
     );
 
@@ -46,10 +49,20 @@ export class McpServer {
           inputSchema: tool.inputSchema,
         },
         async (args: Record<string, unknown>) => {
-          const result = await this.handleToolCall(toolName, args as Record<string, unknown>);
-          const res= {
-            content: [{ type: 'text' as const, text: typeof result==='string'?result:JSON.stringify(result, null, 2) }],
-            isError: true
+          const result = await this.handleToolCall(
+            toolName,
+            args as Record<string, unknown>
+          );
+          const res = {
+            content: [
+              {
+                type: "text" as const,
+                text:
+                  typeof result === "string"
+                    ? result
+                    : JSON.stringify(result, null, 2),
+              },
+            ],
           };
           return res;
         }
@@ -62,16 +75,19 @@ export class McpServer {
   /**
    * 处理工具调用
    */
-  async handleToolCall(tool: string, args: Record<string, unknown>): Promise<unknown> {
+  async handleToolCall(
+    tool: string,
+    args: Record<string, unknown>
+  ): Promise<unknown> {
     // listOpenProjects 特殊处理 - 不需要路由到窗口
-    if (tool === 'listOpenProjects') {
+    if (tool === "listOpenProjects") {
       return this.handleListOpenProjects(args);
     }
 
     // 其他工具需要路由到对应窗口
     const projectPath = args.projectPath as string;
     if (!projectPath) {
-      throw new Error('projectPath is required');
+      throw new Error("projectPath is required");
     }
 
     const client = this.registry.findByProjectPath(projectPath);
@@ -90,36 +106,51 @@ export class McpServer {
     const projectPath = args.projectPath as string | undefined;
 
     // 按窗口分组
-    const workspaces = new Map<string, { id: string; name: string; folders: Array<{ name: string; path: string }> }>();
+    const workspaces = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        folders: Array<{ name: string; path: string }>;
+      }
+    >();
     for (const proj of projects) {
       if (!workspaces.has(proj.windowId)) {
         workspaces.set(proj.windowId, {
           id: proj.windowId,
           name: proj.name,
-          folders: []
+          folders: [],
         });
       }
-      workspaces.get(proj.windowId)!.folders.push({ name: proj.name, path: proj.path });
+      workspaces
+        .get(proj.windowId)!
+        .folders.push({ name: proj.name, path: proj.path });
     }
 
     const result: {
-      workspaces: Array<{ id: string; name: string; folders: Array<{ name: string; path: string }> }>;
-      currentWorkspace?: { id: string; folder: { name: string; path: string } };
+      workspaces?: Array<{
+        id: string;
+        name: string;
+        folders: Array<{ name: string; path: string }>;
+      }>;
+      targetWorkspace?: Array<{
+        id: string;
+        name: string;
+        folders: Array<{ name: string; path: string }>;
+      }>;
     } = {
-      workspaces: Array.from(workspaces.values())
+      workspaces: Array.from(workspaces.values()),
     };
 
     // 如果提供了 projectPath，找到对应的 workspace
     if (projectPath) {
-      const normalizedPath = projectPath.toLowerCase().replace(/\\/g, '/');
-      for (const proj of projects) {
-        if (proj.path.toLowerCase().replace(/\\/g, '/') === normalizedPath) {
-          result.currentWorkspace = {
-            id: proj.windowId,
-            folder: { name: proj.name, path: proj.path }
-          };
-          break;
-        }
+      const formatedPath=ClientRegistry.normalizePath(projectPath);
+      const targetWorkspace = result.workspaces?.filter( ws => ws.folders.filter((f) => f.path === formatedPath).length > 0);
+      if (targetWorkspace && targetWorkspace.length <= 0) {
+        return `The workspace corresponding to the specified \`${formatedPath}\` cannot be found.`;
+      } else {
+        result.targetWorkspace = targetWorkspace;
+        delete result.workspaces;
       }
     }
 
@@ -130,13 +161,16 @@ export class McpServer {
   /**
    * 处理 HTTP 请求
    */
-  async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-    const url = new URL(req.url || '/', `http://${req.headers.host}`);
+  async handleRequest(
+    req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): Promise<void> {
+    const url = new URL(req.url || "/", `http://${req.headers.host}`);
 
     // 健康检查
     if (url.pathname === HEALTH_PATH) {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', clients: this.registry.size }));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "ok", clients: this.registry.size }));
       return;
     }
 
@@ -147,16 +181,19 @@ export class McpServer {
     }
 
     // 404
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Not found" }));
   }
 
   /**
    * 处理 MCP 请求 (Streamable HTTP)
    */
-  private async handleMcpRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  private async handleMcpRequest(
+    req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): Promise<void> {
     // 从请求头获取 session ID
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
     // 如果有 session ID，尝试复用现有 session
     if (sessionId && this.sessions.has(sessionId)) {
