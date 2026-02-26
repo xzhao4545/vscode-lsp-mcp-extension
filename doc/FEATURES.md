@@ -1,0 +1,244 @@
+# 功能说明
+
+## 概述
+
+IDE-LSP for MCP 是一个 VSCode 扩展，通过 MCP (Model Context Protocol) 协议暴露 IDE 的代码智能功能，允许 AI 模型复用 VSCode 的语法分析能力。
+
+## MCP Tools
+
+### 1. listOpenProjects
+
+列出所有打开的 workspace 及其目录。
+
+**输入参数：**
+- `projectPath`: 可选，模型当前所在目录路径，用于定位所属 workspace
+
+**返回：**
+```json
+{
+  "workspaces": [
+    {
+      "id": "window-1",
+      "name": "my-workspace",
+      "folders": [
+        { "name": "frontend", "path": "D:\\Project\\frontend" },
+        { "name": "backend", "path": "D:\\Project\\backend" }
+      ]
+    }
+  ],
+  "currentWorkspace": {
+    "id": "window-1",
+    "folder": { "name": "frontend", "path": "D:\\Project\\frontend" }
+  }
+}
+```
+
+### 2. goToDefinition
+
+跳转到符号定义位置。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `filePath`: 文件路径（绝对或相对）
+- `line`: 行号 (1-based)
+- `character`: 列偏移 (0-based)
+- `symbolName`: 符号名称，用于校验
+- `page`: 可选，页码 (1-based，默认 1)
+
+### 3. findReferences
+
+查找符号的所有引用。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `filePath`: 文件路径（绝对或相对）
+- `line`: 行号 (1-based)
+- `character`: 列偏移 (0-based)
+- `symbolName`: 符号名称，用于校验
+- `page`: 可选，页码 (1-based，默认 1)
+
+### 4. hover
+
+获取符号的悬停信息（文档注释等）。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `filePath`: 文件路径（绝对或相对）
+- `line`: 行号 (1-based)
+- `character`: 列偏移 (0-based)
+- `symbolName`: 符号名称，用于校验
+
+**返回：** `{contents: string}`
+
+### 5. getFileStruct
+
+获取文件中的所有符号结构。
+
+**输入参数：** projectPath, filePath
+
+**返回：** `{symbols: [{name, kind, range, children}]}`
+
+### 6. searchSymbolInWorkspace
+
+在工作区中搜索符号。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `query`: 搜索关键词（大小写不敏感子串匹配）
+- `symbolType`: 符号类型过滤，可选值：`'class'`、`'method'`、`'field'`、`'all'`（默认 `'all'`）
+- `page`: 页码（1-based，默认 1）
+
+### 7. goToImplementation
+
+查找接口/抽象类的实现。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `filePath`: 文件路径（绝对或相对）
+- `line`: 行号 (1-based)
+- `character`: 列偏移 (0-based)
+- `symbolName`: 符号名称，用于校验
+- `page`: 可选，页码 (1-based，默认 1)
+
+
+### 8. incomingCalls
+
+查找方法的调用者。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `filePath`: 文件路径（绝对或相对）
+- `line`: 行号 (1-based)
+- `character`: 列偏移 (0-based)
+- `page`: 可选，页码 (1-based，默认 1)
+- `symbolName`: 符号名称，用于校验
+
+### 9. renameSymbol
+
+准备重命名编辑。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `filePath`: 文件路径（绝对或相对）
+- `line`: 行号 (1-based)
+- `character`: 列偏移 (0-based)
+- `symbolName`: 符号名称，用于校验
+- `newName`: 新名称
+
+**返回：** `{changes: {uri: [{range, newText}]}}`
+
+### 10. getDiagnostics
+
+获取文件的诊断信息（警告、错误）。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `filePath`: 文件路径（绝对或相对）
+- `severity`: 可选，过滤严重级别
+- `page`: 可选，页码 (1-based，默认 1)
+
+**返回：** `{diagnostics: [{message, severity, line, character}], hasMore, total}`
+
+### 11. getDefinitionText
+
+获取 Symbol 定义文本。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `filePath`: 文件路径（绝对或相对）
+- `line`: 行号 (1-based)
+- `character`: 列偏移 (0-based)
+- `symbolName`: 符号名称，用于校验
+
+**返回：** `{definition: [{uri, line, text, kind}]}`
+
+### 12. syncFiles
+
+刷新 VSCode 索引，同步外部文件变更。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `paths`: 可选，要同步的路径数组（相对路径），为空则同步整个项目
+
+**返回：** 同步结果信息
+
+### 13. searchFiles
+
+按文件名正则搜索文件。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `pattern`: 文件名正则表达式
+- `directory`: 可选，搜索目录（相对路径）
+- `recursive`: 可选，是否递归（默认 true）
+- `page`: 可选，页码 (1-based，默认 1)
+
+**返回：** 匹配的文件路径列表
+
+### 14. moveFile
+
+移动文件/目录，自动更新引用。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `sourcePath`: 源文件/目录路径（相对路径）
+- `targetDir`: 目标目录路径（相对路径）
+
+**返回：** 移动结果信息
+
+### 15. deleteFile
+
+安全删除文件，检查引用。
+
+**输入参数：**
+- `projectPath`: 项目目录绝对路径
+- `filePath`: 要删除的文件路径（相对路径）
+- `force`: 可选，强制删除（默认 false）
+
+**返回：** 删除结果，包含未处理的引用位置
+
+### 16. getScopeParent
+
+查找指定位置所属的父级符号。
+
+**输入参数：** projectPath, filePath, line
+
+**返回：** `{name, kind, uri, line}`
+
+## 通用特性
+
+### Symbol 验证
+
+以下工具支持 `symbolName` 参数进行符号验证：
+- goToDefinition
+- findReferences
+- hover
+- goToImplementation
+- renameSymbol
+- getDefinitionText
+
+当指定位置的符号名称与 `symbolName` 不匹配时，返回错误信息。
+
+### 分页支持
+
+以下工具支持 `page` 参数进行分页：
+- goToDefinition
+- findReferences
+- searchSymbolInWorkspace
+- goToImplementation
+- incomingCalls
+- getDiagnostics
+- searchFiles
+
+分页大小由配置项 `ide-lsp-mcp.pageSize` 控制，默认 50。
+
+### 上下文信息
+
+以下工具的返回结果包含代码上下文：
+- goToDefinition
+- findReferences
+- searchSymbolInWorkspace
+- goToImplementation
+- incomingCalls
+
+上下文格式为 `"${line}|${content}"` 的字符串数组，行数由配置项 `ide-lsp-mcp.contextLines` 控制，默认 3 行（上下各 3 行）。
