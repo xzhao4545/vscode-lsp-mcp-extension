@@ -10,13 +10,13 @@ import { ShutdownManager } from './ShutdownManager';
 import { WebSocketServer } from './WebSocketServer';
 import { McpServer } from './McpServer';
 import { StateFileWatcher } from './StateFileWatcher';
-import { FileLock } from '../shared/fileLock';
+import { FileLock, isProcessAlive } from '../shared/fileLock';
 import { StateFile } from '../shared/stateFile';
 import {
   DEFAULT_PORT,
   SERVER_LOCK_FILE
 } from '../shared/constants';
-import { StateUtils } from '../shared/types';
+import { ServerStateData, StateUtils } from '../shared/types';
 
 // 解析命令行参数
 function parseArgs(): { port: number; storagePath: string; forceRestart: boolean } {
@@ -77,9 +77,9 @@ async function main(): Promise<void> {
   try {
     
     // 服务器正在运行且非强制模式
-    if (currentState && StateUtils.isRunning(currentState.state) && !forceRestart) {
+    if (currentState && StateUtils.isRunning(currentState.state) && isProcessAlive(currentState.pid) && !forceRestart) {
       console.log('[Server] Server already running, exiting...');
-      await stateFile.writeAlreadyRunning(port,currentState.state);
+      await stateFile.writeAlreadyRunning(currentState);
       await fileLock.release();
       process.exit(0);
     }
@@ -88,7 +88,7 @@ async function main(): Promise<void> {
     // 4. 启动服务器
     await startServer();
   } catch (err) {
-    await handleStartupError(err, currentState?.state??0);
+    await handleStartupError(err, currentState);
   }
 }
 
@@ -142,7 +142,7 @@ async function startServer(): Promise<void> {
 /**
  * 处理启动错误
  */
-async function handleStartupError(err: unknown, rawState: number): Promise<void> {
+async function handleStartupError(err: unknown, rawState: ServerStateData|null): Promise<void> {
   const error = err as NodeJS.ErrnoException;
   
   if (error.code === 'EADDRINUSE') {

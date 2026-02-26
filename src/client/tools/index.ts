@@ -1,10 +1,10 @@
 // Utilities
-export { StringBuilder } from './StringBuilder';
-export { PaginationHelper } from './PaginationHelper';
+export { StringBuilder } from '../utils/StringBuilder';
+export { PaginationHelper } from '../utils/PaginationHelper';
 
 // Base
 export { BaseTool, type ToolResult } from './BaseTool';
-export { ToolRegistry } from './ToolRegistry';
+export { ToolRegistry } from '../utils/ToolRegistry';
 
 // Tools
 export { GoToDefinitionTool } from './GoToDefinitionTool';

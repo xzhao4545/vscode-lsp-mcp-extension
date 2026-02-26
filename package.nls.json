@@ -9,5 +9,6 @@
   "config.autoStart.description": "Auto start server when VSCode starts",
   "config.timeout.description": "Request timeout (milliseconds)",
   "config.pageSize.description": "Page size",
-  "config.enableDebug.description": "Enable debug mode"
+  "config.enableDebug.description": "Enable debug mode",
+  "config.contextLines.description": "Number of context lines to show(2n+1)"
 }

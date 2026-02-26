@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
-import { StringBuilder } from './StringBuilder';
-import { PaginationHelper } from './PaginationHelper';
+import { StringBuilder } from '../utils/StringBuilder';
+import { PaginationHelper } from '../utils/PaginationHelper';
 
 interface Diagnostic {
   message: string;

@@ -91,39 +91,56 @@ export class StateFile {
   /**
    * 写入端口冲突错误
    */
-  async writePortConflict(port: number, rawState: number, errorMessage?: string): Promise<void> {
-    rawState=StateUtils.clearError(rawState);
-    await this.write({
-      state: ServerState.ERROR_PORT_CONFLICT|rawState,
-      port,
-      pid: process.pid,
-      startTime: Date.now(),
-      errorMessage
-    });
+  async writePortConflict(port:number,rawState: ServerStateData|null, errorMessage?: string): Promise<void> {
+    if(rawState){
+      const s=StateUtils.clearError(rawState.state);
+      rawState={
+        ...rawState,
+        state: ServerState.ERROR_PORT_CONFLICT|s,
+        errorMessage
+      };
+    }
+    else{
+      rawState={
+        state: ServerState.ERROR_PORT_CONFLICT,
+        errorMessage,
+        port,
+        pid: process.pid,
+        startTime: Date.now()
+      };
+    }
+    await this.write(rawState);
   }
   /**
    * 写入服务器已运行错误
    */
-  async writeAlreadyRunning(port: number, rawState: number): Promise<void> {
-    rawState=StateUtils.clearError(rawState);
+  async writeAlreadyRunning(rawState: ServerStateData): Promise<void> {
+    const s=StateUtils.clearError(rawState.state);
     await this.write({
-      state: ServerState.ERROR_ALREADY_RUNNING|rawState,
-      port,
-      pid: process.pid,
-      startTime: Date.now()
+      ...rawState,
+      state: ServerState.ERROR_ALREADY_RUNNING|s,
     });
   }
   /**
    * 写入未知错误
    */
-  async writeError(port: number, rawState: number, errorMessage?: string): Promise<void> {
-    rawState=StateUtils.clearError(rawState);
-    await this.write({
-      state: ServerState.ERROR_UNKNOWN|rawState,
-      port,
-      pid: process.pid,
-      startTime: Date.now(),
-      errorMessage
-    });
+  async writeError(port:number,rawState: ServerStateData|null, errorMessage?: string): Promise<void> {
+    if(rawState){
+      const s=StateUtils.clearError(rawState.state);
+      rawState={
+        ...rawState,
+        state: ServerState.ERROR_UNKNOWN|s,
+        errorMessage
+      };
+    }
+    else{
+      rawState={
+        state: ServerState.ERROR_UNKNOWN,
+        errorMessage,
+        port,
+        pid: process.pid,
+        startTime: Date.now()
+      };
+    }
   }
 }

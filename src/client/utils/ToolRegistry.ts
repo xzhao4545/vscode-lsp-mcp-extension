@@ -1,4 +1,4 @@
-import { BaseTool } from './BaseTool';
+import { BaseTool } from '../tools/BaseTool';
 
 /**
  * 工具注册表 - 管理所有工具的注册和查找

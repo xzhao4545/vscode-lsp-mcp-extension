@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
-import { StringBuilder } from './StringBuilder';
-import { PaginationHelper } from './PaginationHelper';
+import { StringBuilder } from '../utils/StringBuilder';
+import { PaginationHelper } from '../utils/PaginationHelper';
+import { ContextHelper } from '../utils/ContextHelper';
 
 interface WorkspaceSymbol {
   name: string;
   kind: string;
   uri: string;
   line: number;
+  context: string[];
 }
 
 interface SearchSymbolResult {
@@ -28,12 +30,21 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
       'vscode.executeWorkspaceSymbolProvider',
       query
     );
-    const result = (symbols || []).map(s => ({
-      name: s.name,
-      kind: vscode.SymbolKind[s.kind],
-      uri: s.location.uri.fsPath,
-      line: s.location.range.start.line + 1
+
+    const result = await Promise.all((symbols || []).map(async s => {
+      const context = await ContextHelper.getContextAroundLine(
+        s.location.uri,
+        s.location.range.start.line + 1
+      );
+      return {
+        name: s.name,
+        kind: vscode.SymbolKind[s.kind],
+        uri: s.location.uri.fsPath,
+        line: s.location.range.start.line + 1,
+        context
+      };
     }));
+
     return { symbols: result, hasMore: false, total: result.length };
   }
 
@@ -53,7 +64,12 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
       paginated.hasMore,
       (sb: StringBuilder) => {
         for (const sym of paginated.items) {
-          sb.appendLine(`- **${sym.name}** (${sym.kind}) - \`${sym.uri}\`:${sym.line}`);
+          sb.appendLine(`### ${sym.name} (${sym.kind})`);
+          sb.appendLine(`\`${sym.uri}\`:${sym.line}`);
+          sb.appendLine('```');
+          sb.appendLine(ContextHelper.formatContext(sym.context));
+          sb.appendLine('```');
+          sb.appendLine();
         }
       }
     );

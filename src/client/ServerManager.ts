@@ -16,6 +16,7 @@ import {
   ENV_DISABLE_AUTO_START
 } from '../shared/constants';
 import { StateUtils, ServerStateData } from '../shared/types';
+import config from './Config';
 
 /**
  * 等待指定时间
@@ -96,7 +97,7 @@ export class ServerManager {
         case 'change':
           const newPort = await this.notifications.promptNewPort(data.port);
           if (newPort) {
-            await vscode.workspace.getConfiguration('ide-lsp-mcp').update('port', newPort, true);
+            await config.getConfiguration().update('port', newPort, true);
           }
           break;
         case 'cancel':
@@ -116,7 +117,7 @@ export class ServerManager {
    * 尝试启动服务器
    */
   private async tryStartServer(forceRestart: boolean = false): Promise<number> {
-    const port = this.getConfiguredPort();
+    const port = config.getPort();
     
     // 尝试获取锁
     const fileLock = new FileLock(this.lockPath);
@@ -205,13 +206,5 @@ export class ServerManager {
     } catch {
       return false;
     }
-  }
-
-  /**
-   * 获取配置的端口
-   */
-  private getConfiguredPort(): number {
-    const config = vscode.workspace.getConfiguration('ide-lsp-mcp');
-    return config.get<number>('port', DEFAULT_PORT);
   }
 }

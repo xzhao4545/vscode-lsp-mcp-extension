@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
-import { StringBuilder } from './StringBuilder';
+import { StringBuilder } from '../utils/StringBuilder';
+import { SymbolValidator } from '../utils/SymbolValidator';
 
 interface RenameEdit {
   range: {
@@ -12,6 +13,7 @@ interface RenameEdit {
 
 interface RenameSymbolResult {
   changes: Record<string, RenameEdit[]>;
+  error?: string;
 }
 
 /**
@@ -24,15 +26,25 @@ export class RenameSymbolTool extends BaseTool {
     const uri = this.resolveUri(args.projectPath as string, args.filePath as string);
     const position = new vscode.Position((args.line as number) - 1, args.character as number);
     const newName = args.newName as string;
+    const symbolName = args.symbolName as string;
+
+    // 验证 symbol
+    const validationError = await SymbolValidator.validate(uri, position, symbolName);
+    if (validationError) {
+      return { changes: {}, error: validationError };
+    }
+
     const edit = await vscode.commands.executeCommand<vscode.WorkspaceEdit>(
       'vscode.executeDocumentRenameProvider',
       uri,
       position,
       newName
     );
+
     if (!edit) {
       return { changes: {} };
     }
+
     const changes: Record<string, RenameEdit[]> = {};
     for (const [fileUri, edits] of edit.entries()) {
       changes[fileUri.fsPath] = edits.map(e => ({
@@ -43,6 +55,7 @@ export class RenameSymbolTool extends BaseTool {
         newText: e.newText
       }));
     }
+
     return { changes };
   }
 
@@ -50,6 +63,11 @@ export class RenameSymbolTool extends BaseTool {
     const sb = new StringBuilder();
     sb.appendLine('## Rename Symbol');
     sb.appendLine();
+
+    if (result.error) {
+      sb.appendLine(this.emptyContent(result.error));
+      return sb.toString();
+    }
 
     const files = Object.keys(result.changes);
     if (files.length === 0) {
@@ -68,6 +86,7 @@ export class RenameSymbolTool extends BaseTool {
       }
       sb.appendLine();
     }
+
     return sb.toString();
   }
 }

@@ -16,11 +16,20 @@ interface LockInfo {
 /**
  * 检查进程是否存活
  */
-function isProcessAlive(pid: number): boolean {
+export function isProcessAlive(pid: number): boolean {
   try {
     process.kill(pid, 0);
     return true;
-  } catch {
+  } catch(error) {
+    const err = error as NodeJS.ErrnoException;
+    // ESRCH: 进程不存在
+    if (err.code === 'ESRCH') {
+      return false;
+    }
+    // EPERM: 进程存在但无权限访问
+    if (err.code === 'EPERM') {
+      return true;
+    }
     return false;
   }
 }

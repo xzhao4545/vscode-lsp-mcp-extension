@@ -14,6 +14,9 @@ export const SHUTDOWN_DELAY = 30000;
 /** 分页大小 */
 export const DEFAULT_PAGE_SIZE = 50;
 
+/** 上下文行数 */
+export const DEFAULT_CONTEXT_LINES = 3;
+
 /** 调试日志最大条目数 */
 export const MAX_DEBUG_ENTRIES = 500;
 

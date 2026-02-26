@@ -55,6 +55,11 @@
           "type": "boolean",
           "default": false,
           "description": "%config.enableDebug.description%"
+        },
+        "ide-lsp-mcp.contextLines": {
+          "type": "number",
+          "default": 2,
+          "description": "%config.contextLines.description%"
         }
       }
     }
@@ -74,7 +79,7 @@
     "test": "vscode-test",
     "test-mcp": "mocha ./src/test/mcp.test.ts",
     "server:build": "node esbuild.js --server-only",
-    "server:start": "node --enable-source-maps dist/server/main.js --storage c:\\Users\\Learn\\AppData\\Roaming\\Code\\User\\globalStorage\\undefined_publisher.ide-lsp-for-mcp",
+    "server:start": "node --enable-source-maps dist/server/main.js -f --storage c:\\Users\\Learn\\AppData\\Roaming\\Code\\User\\globalStorage\\undefined_publisher.ide-lsp-for-mcp",
     "server:dev": "node esbuild.js --server-only && pnpm run server:start"
   },
   "devDependencies": {

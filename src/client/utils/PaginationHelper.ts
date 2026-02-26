@@ -1,11 +1,12 @@
 import { StringBuilder } from './StringBuilder';
+import Config from '../Config';
 
 /**
  * 分页助手 - 统一添加分页头和分页尾
  */
 export class PaginationHelper {
   /** 默认每页条数 */
-  static readonly DEFAULT_PAGE_SIZE = 50;
+  static readonly DEFAULT_PAGE_SIZE = Config.getPageSize();
 
   /**
    * 对数组进行分页
@@ -52,8 +53,6 @@ export class PaginationHelper {
     sb.appendLine('---');
     if (hasMore) {
       sb.appendLine(`*More results available. Request page ${page + 1} to continue.*`);
-    } else {
-      sb.appendLine(`*End of results (Page ${page}/${totalPages})*`);
     }
   }
 

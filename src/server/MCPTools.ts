@@ -15,7 +15,9 @@ const line = z.number().describe('Line number (1-based)');
 const character = z.number().describe('Column offset (0-based)');
 
 /** 分页 */
-const page = z.number().optional().describe('Page number (1-based)');
+const page = z.number().optional().describe('Page number (1-based), default 1');
+
+const symbolName = z.string().describe('Symbol name for validation');
 
 // ============ 工具定义 ============
 
@@ -34,7 +36,7 @@ export const TOOL_SCHEMAS = {
       filePath,
       line,
       character,
-      symbolName: z.string().optional().describe('Optional symbol name for validation'),
+      symbolName,
     }),
   },
 
@@ -46,6 +48,7 @@ export const TOOL_SCHEMAS = {
       line,
       character,
       page,
+      symbolName,
     }),
   },
 
@@ -56,6 +59,7 @@ export const TOOL_SCHEMAS = {
       filePath,
       line,
       character,
+      symbolName,
     }),
   },
 
@@ -85,6 +89,7 @@ export const TOOL_SCHEMAS = {
       line,
       character,
       page,
+      symbolName,
     }),
   },
 
@@ -105,7 +110,7 @@ export const TOOL_SCHEMAS = {
       filePath,
       line,
       character,
-      symbolName: z.string().optional(),
+      symbolName,
       newName: z.string().describe('New symbol name'),
     }),
   },
@@ -127,7 +132,7 @@ export const TOOL_SCHEMAS = {
       filePath,
       line,
       character,
-      symbolName: z.string().optional(),
+      symbolName,
     }),
   },
 

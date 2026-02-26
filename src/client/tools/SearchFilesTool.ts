@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { BaseTool } from './BaseTool';
-import { StringBuilder } from './StringBuilder';
-import { PaginationHelper } from './PaginationHelper';
+import { StringBuilder } from '../utils/StringBuilder';
+import { PaginationHelper } from '../utils/PaginationHelper';
 
 interface SearchFilesResult {
   files: string[];

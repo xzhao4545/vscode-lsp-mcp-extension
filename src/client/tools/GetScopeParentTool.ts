@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
-import { StringBuilder } from './StringBuilder';
+import { StringBuilder } from '../utils/StringBuilder';
 
 interface GetScopeParentResult {
   found: boolean;

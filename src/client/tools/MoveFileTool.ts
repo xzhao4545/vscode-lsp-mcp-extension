@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { BaseTool } from './BaseTool';
-import { StringBuilder } from './StringBuilder';
+import { StringBuilder } from '../utils/StringBuilder';
 
 interface MoveFileResult {
   success: boolean;
