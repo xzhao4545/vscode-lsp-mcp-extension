@@ -72,6 +72,13 @@ export class ConnectionManager {
   }
 
   /**
+   * 获取当前连接端口
+   */
+  getPort(): number {
+    return this.port;
+  }
+
+  /**
    * 获取当前连接
    */
   getConnection(): ServerConnection | null {

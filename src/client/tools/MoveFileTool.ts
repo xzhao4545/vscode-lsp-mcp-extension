@@ -3,9 +3,21 @@ import * as path from 'path';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
 
+interface MoveFileEdit {
+  file: string;
+  edits: Array<{
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    };
+    newText: string;
+  }>;
+}
+
 interface MoveFileResult {
   success: boolean;
   newPath: string;
+  updatedReferences?: MoveFileEdit[];
 }
 
 /**
@@ -20,8 +32,40 @@ export class MoveFileTool extends BaseTool {
     const targetDir = args.targetDir as string;
     const sourceUri = this.resolveUri(projectPath, sourcePath);
     const targetUri = this.resolveUri(projectPath, path.join(targetDir, path.basename(sourcePath)));
-    await vscode.workspace.fs.rename(sourceUri, targetUri);
-    return { success: true, newPath: targetUri.fsPath };
+
+    // 使用 WorkspaceEdit.renameFile() 来移动文件，VSCode 会自动更新引用
+    const workspaceEdit = new vscode.WorkspaceEdit();
+    workspaceEdit.renameFile(sourceUri, targetUri, { overwrite: false });
+
+    // 应用编辑并获取结果
+    const success = await vscode.workspace.applyEdit(workspaceEdit);
+    if (!success) {
+      return { success: false, newPath: targetUri.fsPath };
+    }
+
+    // 提取更新的引用信息
+    const updatedReferences: MoveFileEdit[] = [];
+    for (const [fileUri, edits] of workspaceEdit.entries()) {
+      // 跳过文件移动操作本身，只记录文本编辑
+      if (edits.length > 0) {
+        updatedReferences.push({
+          file: fileUri.fsPath,
+          edits: edits.map(e => ({
+            range: {
+              start: { line: e.range.start.line + 1, character: e.range.start.character },
+              end: { line: e.range.end.line + 1, character: e.range.end.character }
+            },
+            newText: e.newText
+          }))
+        });
+      }
+    }
+
+    return {
+      success: true,
+      newPath: targetUri.fsPath,
+      updatedReferences: updatedReferences.length > 0 ? updatedReferences : undefined
+    };
   }
 
   format(result: MoveFileResult): string {
@@ -30,6 +74,14 @@ export class MoveFileTool extends BaseTool {
     sb.appendLine();
     if (result.success) {
       sb.appendLine(`✓ File moved to: \`${result.newPath}\``);
+      // 显示更新的引用信息
+      if (result.updatedReferences && result.updatedReferences.length > 0) {
+        sb.appendLine();
+        sb.appendLine('**Updated references:**');
+        for (const ref of result.updatedReferences) {
+          sb.appendLine(`- \`${ref.file}\`: ${ref.edits.length} edit(s)`);
+        }
+      }
     } else {
       sb.appendLine('✗ Failed to move file');
     }

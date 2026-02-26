@@ -5,7 +5,7 @@
   "version": "0.0.1",
   "icon": "images/extensionIcon.png",
   "engines": {
-    "vscode": "^1.109.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
     "Other"
@@ -71,11 +71,6 @@
           "default": true,
           "description": "%config.autoStart.description%"
         },
-        "ide-lsp-mcp.timeout": {
-          "type": "number",
-          "default": 30000,
-          "description": "%config.timeout.description%"
-        },
         "ide-lsp-mcp.pageSize": {
           "type": "number",
           "default": 50,
@@ -130,7 +125,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@vscode/l10n": "^0.0.18",
     "chokidar": "^5.0.0",
     "ws": "^8.16.0",
     "zod": "^4.3.6"

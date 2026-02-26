@@ -17,10 +17,6 @@ class Config {
     return this.vsConfig.get<number>('pageSize', DEFAULT_PAGE_SIZE);
   }
 
-  getTimeout(): number {
-    return this.vsConfig.get<number>('timeout', DEFAULT_TIMEOUT);
-  }
-
   getAutoStart(): boolean {
     return this.vsConfig.get<boolean>('autoStart', true);
   }

@@ -9,7 +9,6 @@ import { FileLock } from '../shared/fileLock';
 import { StateFile } from '../shared/stateFile';
 import { NotificationManager } from './NotificationManager';
 import {
-  DEFAULT_PORT,
   SERVER_LOCK_FILE,
   SERVER_STARTUP_TIMEOUT,
   HEALTH_CHECK_INTERVAL,
@@ -53,7 +52,7 @@ export class ServerManager {
    */
   async ensureServerRunning(): Promise<number> {
     // 检查环境变量是否禁用自动启动
-    if (process.env[ENV_DISABLE_AUTO_START] === 'true') {
+    if (process.env[ENV_DISABLE_AUTO_START] === 'true'||!config.getAutoStart()) {
       console.log('[ServerManager] Auto-start disabled');
       const data = await this.stateFile.read();
       if (data && StateUtils.isReady(data.state) && await this.isServerAlive(data.port)) {

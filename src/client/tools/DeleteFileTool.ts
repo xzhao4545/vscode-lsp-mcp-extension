@@ -31,16 +31,22 @@ export class DeleteFileTool extends BaseTool {
       new vscode.Position(0, 0)
     );
     
-    if (refs && refs.length > 0 && !args.force) {
+    const references = refs && refs.length > 0
+      ? refs.map(r => ({ uri: r.uri.fsPath, line: r.range.start.line + 1 }))
+      : undefined;
+
+    // 无论 force 是否为 true，都返回引用信息
+    if (references && references.length > 0 && !args.force) {
       return {
         success: false,
         message: 'File has references',
-        references: refs.map(r => ({ uri: r.uri.fsPath, line: r.range.start.line + 1 }))
+        references
       };
     }
-    
+
     await vscode.workspace.fs.delete(uri);
-    return { success: true };
+    // force=true 时也返回引用信息，方便用户了解哪些地方需要修改
+    return { success: true, references };
   }
 
   format(result: DeleteFileResult): string {
@@ -50,6 +56,14 @@ export class DeleteFileTool extends BaseTool {
     
     if (result.success) {
       sb.appendLine('✓ File deleted successfully');
+      // 成功删除时也显示引用信息，方便用户修改
+      if (result.references && result.references.length > 0) {
+        sb.appendLine();
+        sb.appendLine('**References that may need updating:**');
+        for (const ref of result.references) {
+          sb.appendLine(`- \`${ref.uri}\`:${ref.line}`);
+        }
+      }
     } else {
       sb.appendLine(`✗ ${result.message || 'Failed to delete file'}`);
       if (result.references && result.references.length > 0) {

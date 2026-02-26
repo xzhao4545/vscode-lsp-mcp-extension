@@ -9,8 +9,7 @@
   "view.debug.name": "MCP Debug",
   "config.title": "IDE-LSP for MCP",
   "config.port.description": "MCP server port",
-  "config.autoStart.description": "Auto start server when VSCode starts",
-  "config.timeout.description": "Request timeout (milliseconds)",
+  "config.autoStart.description": "Auto start MCP server when VSCode starts",
   "config.pageSize.description": "Page size",
   "config.enableDebug.description": "Enable debug mode",
   "config.contextLines.description": "Number of context lines to show(2n+1)"

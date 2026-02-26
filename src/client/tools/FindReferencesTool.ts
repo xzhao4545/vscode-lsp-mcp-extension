@@ -43,7 +43,7 @@ export class FindReferencesTool extends BaseTool {
     );
 
     const references = await Promise.all((locations || []).map(async loc => {
-      const context = await ContextHelper.getContextAroundLine(loc.uri, loc.range.start.line + 1);
+      const context = await ContextHelper.getContextAroundLine(loc.uri, loc.range.start.line + 1, 0);
       return {
         uri: loc.uri.fsPath,
         line: loc.range.start.line + 1,
@@ -67,6 +67,14 @@ export class FindReferencesTool extends BaseTool {
     const page = (args.page as number) || 1;
     const paginated = PaginationHelper.paginate(result.references, page);
 
+    // 按 URI 聚合
+    const grouped = new Map<string, Reference[]>();
+    for (const ref of paginated.items) {
+      const refs = grouped.get(ref.uri) || [];
+      refs.push(ref);
+      grouped.set(ref.uri, refs);
+    }
+
     return PaginationHelper.wrapPaginated(
       'References',
       paginated.page,
@@ -74,14 +82,17 @@ export class FindReferencesTool extends BaseTool {
       paginated.totalItems,
       paginated.hasMore,
       (sb: StringBuilder) => {
-        for (const ref of paginated.items) {
-          sb.appendLine(`### \`${ref.uri}\`:${ref.line}:${ref.character}`);
-          sb.appendLine('```');
-          sb.appendLine(ContextHelper.formatContext(ref.context));
-          sb.appendLine('```');
+        for (const [uri, refs] of Array.from(grouped.entries())) {
+          sb.appendLine(`### \`${uri}\``);
+          for (const ref of refs) {
+            sb.appendLine(`**Location ${ref.line}:${ref.character}**`);
+            sb.appendLine('```');
+            sb.appendLine(ContextHelper.formatContext(ref.context));
+            sb.appendLine('```');
+          }
           sb.appendLine();
         }
       }
     );
-  }
+}
 }

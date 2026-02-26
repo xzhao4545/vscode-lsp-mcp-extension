@@ -127,7 +127,7 @@ export const TOOL_SCHEMAS = {
     inputSchema: z.object({
       projectPath,
       filePath,
-      severity: z.string().optional().describe("Min severity filter: error|warning|info|hint|all (default: warning)"),
+      severity: z.enum(["Error","Warning","Information","Hint"]).default("Warning").optional().describe("Min severity filter: Error|Warning|Information|Hint (default: Warning)"),
       page,
     }),
   },

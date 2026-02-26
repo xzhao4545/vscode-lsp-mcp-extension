@@ -9,6 +9,7 @@ interface WorkspaceSymbol {
   kind: string;
   uri: string;
   line: number;
+  character: number;
   context: string[];
 }
 
@@ -42,6 +43,7 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
         kind: vscode.SymbolKind[s.kind],
         uri: s.location.uri.fsPath,
         line: s.location.range.start.line + 1,
+        character: s.location.range.start.character,
         context
       };
     }));
@@ -53,10 +55,15 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
     if (result.symbols.length === 0) {
       return this.emptyContent('No symbols found');
     }
-
     const page = (args.page as number) || 1;
     const paginated = PaginationHelper.paginate(result.symbols, page);
-
+    // 按 URI 聚合
+    const grouped = new Map<string, WorkspaceSymbol[]>();
+    for (const sym of paginated.items) {
+      const syms = grouped.get(sym.uri) || [];
+      syms.push(sym);
+      grouped.set(sym.uri, syms);
+    }
     return PaginationHelper.wrapPaginated(
       'Workspace Symbols',
       paginated.page,
@@ -64,16 +71,17 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
       paginated.totalItems,
       paginated.hasMore,
       (sb: StringBuilder) => {
-        for (const sym of paginated.items) {
-          sb.appendLine(`### ${sym.name} (${sym.kind})`);
-          sb.appendLine(`\`${sym.uri}\`:${sym.line}`);
-          sb.appendLine('*Context:*');
-          sb.appendLine('```');
-          sb.appendLine(ContextHelper.formatContext(sym.context));
-          sb.appendLine('```');
+        for (const [uri, syms] of Array.from(grouped.entries())) {
+          sb.appendLine(`### \`${uri}\``);
+          for (const sym of syms) {
+            sb.appendLine(`**${sym.name}** (${sym.kind}) - Location ${sym.line}:${sym.character}`);
+            sb.appendLine('```');
+            sb.appendLine(ContextHelper.formatContext(sym.context));
+            sb.appendLine('```');
+          }
           sb.appendLine();
         }
       }
     );
-  }
+}
 }

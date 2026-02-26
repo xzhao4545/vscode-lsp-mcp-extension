@@ -49,9 +49,9 @@ export class PaginationHelper {
    * 添加分页尾
    */
   static appendFooter(sb: StringBuilder, page: number, totalPages: number, hasMore: boolean): void {
-    sb.appendLine();
-    sb.appendLine('---');
     if (hasMore) {
+      sb.appendLine();
+      sb.appendLine('---');
       sb.appendLine(`*More results available. Request page ${page + 1} to continue.*`);
     }
   }

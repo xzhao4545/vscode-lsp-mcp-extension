@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { ConnectionManager } from "../ConnectionManager";
-import * as l10n from "@vscode/l10n";
+import { l10n } from "vscode";
 import { ServerManager } from "../ServerManager";
 import { NotificationManager } from "../NotificationManager";
 import { DebugLogStore } from "../debug/DebugLogStore";
@@ -12,10 +12,10 @@ type RegisterProps = {
   serverManager: ServerManager;
   notifications: NotificationManager;
   debugLogStore: DebugLogStore;
-  debugPanelProvider: DebugPanelProvider
+  debugPanelProvider: DebugPanelProvider;
 };
 
-const DEBUG_DETAIL_SCHEME = 'ide-lsp-mcp-debug';
+const DEBUG_DETAIL_SCHEME = "ide-lsp-mcp-debug";
 const debugDetailContents = new Map<string, string>();
 
 /**
@@ -37,7 +37,7 @@ export default function registerCommands(
     vscode.commands.registerCommand("ide-lsp-mcp.showStatus", () => {
       const state = connectionManager.getState();
       if (state === "connected") {
-        vscode.window.showInformationMessage(l10n.t("MCP Server is running"));
+        vscode.window.showInformationMessage(l10n.t(`MCP Server is running on port: ${connectionManager.getPort()}`));
       } else {
         vscode.window.showWarningMessage(l10n.t("MCP Server is not connected"));
       }
@@ -149,7 +149,9 @@ function buildDebugDetailContent(entry: DebugLogEntry): string {
 - **${l10n.t("Tool")}**: ${entry.tool}
 - **${l10n.t("Time")}**: ${timeStr}
 - **${l10n.t("Duration")}**: ${entry.duration}ms
-- **${l10n.t("Status")}**: ${entry.success ? `✓ ${l10n.t("Success")}` : `✗ ${l10n.t("Failed")}`}
+- **${l10n.t("Status")}**: ${
+    entry.success ? `✓ ${l10n.t("Success")}` : `✗ ${l10n.t("Failed")}`
+  }
 
 \`\`\`json
 ${JSON.stringify(entry.args, null, 2)}

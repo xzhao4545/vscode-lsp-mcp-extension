@@ -90,7 +90,7 @@ async function runToolTest(client: McpTestClient, toolName: string): Promise<voi
 
     results.push({
       expectedFile: testCase.expectedFile || `${testCase.name}.md`,
-      result: result.content.substring(1,result.content.length-1)
+      result: result.content
     });
   }
 

@@ -9,8 +9,7 @@
   "view.debug.name": "MCP 调试",
   "config.title": "IDE-LSP for MCP",
   "config.port.description": "MCP 服务器端口",
-  "config.autoStart.description": "VSCode 启动时自动启动服务",
-  "config.timeout.description": "请求超时时间 (毫秒)",
+  "config.autoStart.description": "VSCode 启动时自动启动MCP服务",
   "config.pageSize.description": "分页大小",
   "config.enableDebug.description": "启用调试模式",
   "config.contextLines.description": "上下文行数(2n+1)"
