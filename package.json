@@ -3,6 +3,7 @@
   "displayName": "%displayName%",
   "description": "%description%",
   "version": "0.0.1",
+  "icon": "images/extensionIcon.png",
   "engines": {
     "vscode": "^1.109.0"
   },
@@ -26,8 +27,37 @@
       {
         "command": "ide-lsp-mcp.restartServer",
         "title": "%command.restartServer%"
+      },
+      {
+        "command": "ide-lsp-mcp.clearDebugLog",
+        "title": "%command.clearDebugLog%",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "ide-lsp-mcp.showDebugDetail",
+        "title": "%command.showDebugDetail%"
       }
     ],
+    "views": {
+      "debug": [
+        {
+          "icon": "images/debugWindowIcon.svg",
+          "id": "ideLspMcpDebug",
+          "name": "%view.debug.name%",
+          "when": "config.ide-lsp-mcp.enableDebug",
+          "contextualTitle": "%view.debug.name%"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "ide-lsp-mcp.clearDebugLog",
+          "when": "view == ideLspMcpDebug",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "%config.title%",
       "properties": {

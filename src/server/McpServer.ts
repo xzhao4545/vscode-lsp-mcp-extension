@@ -9,7 +9,6 @@ import * as http from 'http';
 import * as crypto from 'crypto';
 import { ClientRegistry } from './ClientRegistry';
 import { TaskManager } from './TaskManager';
-import type { DebugLogEntry } from '../shared/types';
 import { HEALTH_PATH } from '../shared/constants';
 import toolSCHEMAS, { type ToolName } from './MCPTools';
 
@@ -64,46 +63,23 @@ export class McpServer {
    * 处理工具调用
    */
   async handleToolCall(tool: string, args: Record<string, unknown>): Promise<unknown> {
-    const startTime = Date.now();
-    let success = true;
-    let result: unknown;
-
-    try {
-      // listOpenProjects 特殊处理 - 不需要路由到窗口
-      if (tool === 'listOpenProjects') {
-        result = this.handleListOpenProjects(args);
-        return result;
-      }
-
-      // 其他工具需要路由到对应窗口
-      const projectPath = args.projectPath as string;
-      if (!projectPath) {
-        throw new Error('projectPath is required');
-      }
-
-      const client = this.registry.findByProjectPath(projectPath);
-      if (!client) {
-        throw new Error(`Project not found in any open window: ${projectPath}`);
-      }
-
-      result = await this.taskManager.dispatch(client, tool, args);
-      return result;
-    } catch (error) {
-      success = false;
-      result = { error: (error as Error).message };
-      throw error;
-    } finally {
-      // 广播调试日志
-      const entry: DebugLogEntry = {
-        timestamp: startTime,
-        tool,
-        args,
-        result: JSON.stringify(result),
-        duration: Date.now() - startTime,
-        success
-      };
-      this.broadcastDebugLog(entry);
+    // listOpenProjects 特殊处理 - 不需要路由到窗口
+    if (tool === 'listOpenProjects') {
+      return this.handleListOpenProjects(args);
     }
+
+    // 其他工具需要路由到对应窗口
+    const projectPath = args.projectPath as string;
+    if (!projectPath) {
+      throw new Error('projectPath is required');
+    }
+
+    const client = this.registry.findByProjectPath(projectPath);
+    if (!client) {
+      throw new Error(`Project not found in any open window: ${projectPath}`);
+    }
+
+    return this.taskManager.dispatch(client, tool, args);
   }
 
   /**
@@ -151,15 +127,6 @@ export class McpServer {
   }
 
   /**
-   * 广播调试日志
-   */
-  private broadcastDebugLog(entry: DebugLogEntry): void {
-    const message = JSON.stringify({ type: 'debugLog', entry });
-    for (const client of this.registry.getAllClients()) {
-      client.ws.send(message);
-    }
-  }
-
   /**
    * 处理 HTTP 请求
    */

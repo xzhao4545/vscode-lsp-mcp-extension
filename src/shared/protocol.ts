@@ -2,7 +2,7 @@
  * WebSocket 消息协议定义
  */
 
-import type { Folder, DebugLogEntry } from './types';
+import type { Folder } from './types';
 
 // ============ 窗口 → 服务器 消息 ============
 
@@ -51,15 +51,8 @@ export interface TaskMessage {
   tool: string;
   args: Record<string, unknown>;
 }
-
-/** 调试日志消息 */
-export interface DebugLogMessage {
-  type: 'debugLog';
-  entry: DebugLogEntry;
-}
-
 /** 服务器发送的消息类型 */
-export type ServerMessage = RegisteredMessage | TaskMessage | DebugLogMessage;
+export type ServerMessage = RegisteredMessage | TaskMessage;
 
 /** 所有消息类型 */
 export type Message = ClientMessage | ServerMessage;

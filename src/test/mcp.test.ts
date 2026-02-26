@@ -17,7 +17,7 @@ const TEST_DATA_DIR = path.join(__dirname, '..', '..', 'src', 'test', 'testData'
 const EXPECTED_DIR = path.join(TEST_DATA_DIR, 'expected');
 
 // 测试项目路径 - 需要根据实际情况修改
-const PROJECT_PATH = process.env.TEST_PROJECT_PATH || 'D:\\Project\\node\\mock_server';
+const PROJECT_PATH = process.env.TEST_PROJECT_PATH || 'D:\\Project\\PythonTest\\paper_translation';
 
 suite('MCP Tools Test Suite', function () {
   this.timeout(60000); // 60秒超时

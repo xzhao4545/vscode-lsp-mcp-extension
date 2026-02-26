@@ -9,6 +9,7 @@ interface SymbolInfo {
     start: { line: number; character: number };
     end: { line: number; character: number };
   };
+  defineLoc: string;
   children?: SymbolInfo[];
 }
 
@@ -35,6 +36,7 @@ export class GetFileStructTool extends BaseTool {
         start: { line: s.range.start.line + 1, character: s.range.start.character },
         end: { line: s.range.end.line + 1, character: s.range.end.character }
       },
+      defineLoc:`${s.selectionRange.start.line+1}:${s.selectionRange.start.character}`,
       children: s.children?.map(mapSymbol)
     });
     return { symbols: (symbols || []).map(mapSymbol) };
@@ -51,7 +53,7 @@ export class GetFileStructTool extends BaseTool {
 
     const formatSymbol = (symbol: SymbolInfo, indent: number): void => {
       const prefix = '  '.repeat(indent);
-      sb.appendLine(`${prefix}- **${symbol.name}** (${symbol.kind}) [L${symbol.range.start.line}-${symbol.range.end.line}]`);
+      sb.appendLine(`${prefix}- **${symbol.name}** (${symbol.kind}) [defineLoc:${symbol.defineLoc}] [range:L${symbol.range.start.line}-${symbol.range.end.line}]`);
       if (symbol.children) {
         for (const child of symbol.children) {
           formatSymbol(child, indent + 1);

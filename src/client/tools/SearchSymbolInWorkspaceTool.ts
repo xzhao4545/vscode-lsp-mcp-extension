@@ -34,7 +34,8 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
     const result = await Promise.all((symbols || []).map(async s => {
       const context = await ContextHelper.getContextAroundLine(
         s.location.uri,
-        s.location.range.start.line + 1
+        s.location.range.start.line + 1,
+        0
       );
       return {
         name: s.name,
@@ -66,6 +67,7 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
         for (const sym of paginated.items) {
           sb.appendLine(`### ${sym.name} (${sym.kind})`);
           sb.appendLine(`\`${sym.uri}\`:${sym.line}`);
+          sb.appendLine('*Context:*');
           sb.appendLine('```');
           sb.appendLine(ContextHelper.formatContext(sym.context));
           sb.appendLine('```');

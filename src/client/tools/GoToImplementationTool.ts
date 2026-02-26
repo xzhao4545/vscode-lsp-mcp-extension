@@ -75,7 +75,7 @@ export class GoToImplementationTool extends BaseTool {
       paginated.hasMore,
       (sb: StringBuilder) => {
         for (const impl of paginated.items) {
-          sb.appendLine(`### \`${impl.uri}\`:${impl.line}`);
+          sb.appendLine(`### \`${impl.uri}\`:${impl.line}:${impl.character}`);
           sb.appendLine('```');
           sb.appendLine(ContextHelper.formatContext(impl.context));
           sb.appendLine('```');

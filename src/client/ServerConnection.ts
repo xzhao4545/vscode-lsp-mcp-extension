@@ -5,14 +5,10 @@
 import * as vscode from 'vscode';
 import WebSocket from 'ws';
 import type { ServerMessage, TaskMessage } from '../shared/protocol';
-import type { DebugLogEntry } from '../shared/types';
-import { MAX_DEBUG_ENTRIES } from '../shared/constants';
 
 export class ServerConnection {
   private ws: WebSocket | null = null;
-  private debugEntries: DebugLogEntry[] = [];
   private onTaskCallback: ((task: TaskMessage) => Promise<unknown>) | null = null;
-  private onDebugLogCallback: (() => void) | null = null;
   private onCloseCallback: (() => void) | null = null;
 
   constructor(private port: number) {}
@@ -40,6 +36,7 @@ export class ServerConnection {
       });
     });
   }
+
   /**
    * 注册窗口
    */
@@ -59,18 +56,12 @@ export class ServerConnection {
   }
 
   /**
-   * 设置调试日志回调
-   */
-  onDebugLog(callback: () => void): void {
-    this.onDebugLogCallback = callback;
-  }
-
-  /**
    * 设置连接关闭回调
    */
   onClose(callback: () => void): void {
     this.onCloseCallback = callback;
   }
+
   /**
    * 处理消息
    */
@@ -84,14 +75,12 @@ export class ServerConnection {
         case 'task':
           await this.executeTask(msg);
           break;
-        case 'debugLog':
-          this.addDebugEntry(msg.entry);
-          break;
       }
     } catch (err) {
       console.error('[Connection] Failed to handle message:', err);
     }
   }
+
   /**
    * 执行任务
    */
@@ -110,29 +99,7 @@ export class ServerConnection {
       });
     }
   }
-  /**
-   * 添加调试日志条目
-   */
-  private addDebugEntry(entry: DebugLogEntry): void {
-    this.debugEntries.unshift(entry);
-    if (this.debugEntries.length > MAX_DEBUG_ENTRIES) {
-      this.debugEntries.pop();
-    }
-    this.onDebugLogCallback?.();
-  }
-  /**
-   * 获取调试日志条目
-   */
-  getDebugEntries(): DebugLogEntry[] {
-    return this.debugEntries;
-  }
-  /**
-   * 清空调试日志
-   */
-  clearDebugEntries(): void {
-    this.debugEntries = [];
-    this.onDebugLogCallback?.();
-  }
+
   /**
    * 连接关闭处理
    */
@@ -141,12 +108,14 @@ export class ServerConnection {
     this.ws = null;
     this.onCloseCallback?.();
   }
+
   /**
    * 发送消息
    */
   private send(msg: unknown): void {
     this.ws?.send(JSON.stringify(msg));
   }
+
   /**
    * 断开连接
    */

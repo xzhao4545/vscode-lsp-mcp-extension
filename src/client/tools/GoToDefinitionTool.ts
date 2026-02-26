@@ -68,25 +68,22 @@ export class GoToDefinitionTool extends BaseTool {
     if (!result.found || result.definitions.length === 0) {
       return this.emptyContent('No definition found');
     }
-
-    const page = (args.page as number) || 1;
-    const paginated = PaginationHelper.paginate(result.definitions, page);
-
-    return PaginationHelper.wrapPaginated(
-      'Go To Definition',
-      paginated.page,
-      paginated.totalPages,
-      paginated.totalItems,
-      paginated.hasMore,
-      (sb: StringBuilder) => {
-        for (const def of paginated.items) {
+    const formatDefinition=(sb:StringBuilder,def:Definition)=>{
           sb.appendLine(`### \`${def.uri}\`:${def.line}`);
           sb.appendLine('```');
           sb.appendLine(ContextHelper.formatContext(def.context));
           sb.appendLine('```');
           sb.appendLine();
-        }
-      }
-    );
+    };
+    const sb=new StringBuilder();
+    if(result.definitions.length===1){
+      formatDefinition(sb,result.definitions[0]);
+      return sb.toString();
+    }
+    sb.append(`Total: ${result.definitions.length} items`);
+    result.definitions.forEach(def=>{
+      formatDefinition(sb,def);
+    });
+    return sb.toString();
   }
 }

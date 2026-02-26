@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
+import { ContextHelper } from '../utils/ContextHelper';
 
 interface GetScopeParentResult {
   found: boolean;
@@ -8,6 +9,8 @@ interface GetScopeParentResult {
   kind?: string;
   uri?: string;
   line?: number;
+  character?: number;
+  context?: string[];
 }
 
 /**
@@ -46,7 +49,9 @@ export class GetScopeParentTool extends BaseTool {
       name: parent.name,
       kind: vscode.SymbolKind[parent.kind],
       uri: uri.fsPath,
-      line: parent.range.start.line + 1
+      line: parent.range.start.line + 1,
+      character: parent.range.start.character,
+      context: await ContextHelper.getContextAroundLine(uri,parent.range.start.line+1)
     };
   }
 
@@ -59,7 +64,13 @@ export class GetScopeParentTool extends BaseTool {
     } else {
       sb.appendLine(`**Name:** ${result.name}`);
       sb.appendLine(`**Kind:** ${result.kind}`);
-      sb.appendLine(`**Location:** \`${result.uri}\`:${result.line}`);
+      sb.appendLine(`**Location:** \`${result.uri}\`:${result.line}:${result.character}`);
+      sb.appendLine(`**Context:**`);
+      if(result.context) {
+        sb.append("```");
+        sb.appendLine(ContextHelper.formatContext(result.context));
+        sb.append("```");
+      }
     }
     return sb.toString();
   }

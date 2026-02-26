@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import { ServerConnection } from './ServerConnection';
 import { NotificationManager } from './NotificationManager';
 import type { TaskMessage } from '../shared/protocol';
+import type { DebugLogEntry } from '../shared/types';
 import { StateFile } from '../shared/stateFile';
 import { StateUtils } from '../shared/types';
 import {
@@ -14,6 +15,8 @@ import {
   RECONNECT_MULTIPLIER,
   RECONNECT_MAX_ATTEMPTS
 } from '../shared/constants';
+import Config from './Config';
+import type { DebugLogStore } from './debug/DebugLogStore';
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 
@@ -41,14 +44,17 @@ export class ConnectionManager {
   private stateCallback: ConnectionStateCallback | null = null;
   private isReconnecting: boolean = false;
   private shouldStop: boolean = false;
+  private debugLogStore: DebugLogStore | null = null;
 
   constructor(
     private stateFile: StateFile,
     private notifications: NotificationManager,
     private onTaskCallback: (task:TaskMessage) => Promise<unknown>,
-    initialPort: number
+    initialPort: number,
+    debugLogStore?: DebugLogStore
   ) {
     this.port = initialPort;
+    this.debugLogStore = debugLogStore || null;
   }
 
   /**
@@ -93,7 +99,7 @@ export class ConnectionManager {
     try {
       this.connection = new ServerConnection(this.port);
       await this.connection.connect();
-      this.connection.onTask(this.onTaskCallback);
+      this.connection.onTask(this.wrapTaskCallback());
       this.setState('connected');
       this.reconnectAttempts = 0;
       this.stopStatusWatching();
@@ -260,6 +266,36 @@ export class ConnectionManager {
     this.port = port;
   }
 
+  /**
+   * 包装任务回调，记录调试日志
+   */
+  private wrapTaskCallback(): (task: TaskMessage) => Promise<unknown> {
+    return async (task: TaskMessage): Promise<unknown> => {
+      const startTime = Date.now();
+      let success = true;
+      let result: unknown;
+      try {
+        result = await this.onTaskCallback(task);
+        return result;
+      } catch (error) {
+        success = false;
+        result = { error: (error as Error).message };
+        throw error;
+      } finally {
+        if (Config.getEnableDebug() && this.debugLogStore) {
+          const entry: DebugLogEntry = {
+            timestamp: startTime,
+            tool: task.tool,
+            args: task.args,
+            result: JSON.stringify(result),
+            duration: Date.now() - startTime,
+            success
+          };
+          this.debugLogStore.add(entry);
+        }
+      }
+    };
+  }
   /**
    * 销毁
    */

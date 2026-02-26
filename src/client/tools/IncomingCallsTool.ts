@@ -26,7 +26,7 @@ export class IncomingCallsTool extends BaseTool {
 
   async execute(args: Record<string, unknown>): Promise<IncomingCallsResult> {
     const uri = this.resolveUri(args.projectPath as string, args.filePath as string);
-    const position = new vscode.Position((args.line as number) - 1, 0);
+    const position = new vscode.Position((args.line as number) - 1, 16);
 
     const items = await vscode.commands.executeCommand<vscode.CallHierarchyItem[]>(
       'vscode.prepareCallHierarchy',
