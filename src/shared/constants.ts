@@ -3,7 +3,7 @@
  */
 
 /** MCP 服务器默认端口 */
-export const DEFAULT_PORT = 53122;
+export const DEFAULT_PORT = 53221;
 
 /** 请求超时时间 (毫秒) */
 export const DEFAULT_TIMEOUT = 30000;

@@ -4,6 +4,7 @@ import { StringBuilder } from '../utils/StringBuilder';
 import { PaginationHelper } from '../utils/PaginationHelper';
 import { SymbolValidator } from '../utils/SymbolValidator';
 import { ContextHelper } from '../utils/ContextHelper';
+import { LocationHelper } from '../utils/LocationHelper';
 
 interface Implementation {
   uri: string;
@@ -36,13 +37,13 @@ export class GoToImplementationTool extends BaseTool {
       return { implementations: [], hasMore: false, total: 0, error: validationError };
     }
 
-    const locations = await vscode.commands.executeCommand<vscode.Location[]>(
-      'vscode.executeImplementationProvider',
-      uri,
-      position
-    );
+    const rawLocations = await vscode.commands.executeCommand<
+      vscode.Location | vscode.Location[] | vscode.LocationLink[]
+    >('vscode.executeImplementationProvider', uri, position);
 
-    const implementations = await Promise.all((locations || []).map(async loc => {
+    const locations = LocationHelper.normalize(rawLocations);
+
+    const implementations = await Promise.all(locations.map(async loc => {
       const context = await ContextHelper.getContextAroundLine(loc.uri, loc.range.start.line + 1);
       return {
         uri: loc.uri.fsPath,

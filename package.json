@@ -2,6 +2,11 @@
   "name": "ide-lsp-for-mcp",
   "displayName": "%displayName%",
   "description": "%description%",
+  "publisher": "xzhao",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xzhao4545/vscode-lsp-mcp-extension"
+  },
   "version": "0.0.1",
   "icon": "images/extensionIcon.png",
   "engines": {
@@ -63,7 +68,7 @@
       "properties": {
         "ide-lsp-mcp.port": {
           "type": "number",
-          "default": 53122,
+          "default": 53221,
           "description": "%config.port.description%"
         },
         "ide-lsp-mcp.autoStart": {
@@ -90,6 +95,7 @@
     }
   },
   "scripts": {
+    "build": "pnpm vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links",
     "vscode:prepublish": "pnpm run package",
     "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
@@ -110,7 +116,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "@types/vscode": "^1.109.0",
+    "@types/vscode": "^1.85.0",
     "@types/ws": "^8.5.10",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
@@ -119,15 +125,16 @@
     "eslint": "^9.39.2",
     "mocha": "^11.7.5",
     "npm-run-all": "^4.1.5",
+    "source-map": "^0.7.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "chokidar": "^5.0.0",
     "ws": "^8.16.0",
-    "zod": "^4.3.6"
+    "zod": "4"
   },
   "l10n": "./l10n",
   "mocha": {

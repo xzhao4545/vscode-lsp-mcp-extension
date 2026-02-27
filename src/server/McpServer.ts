@@ -43,7 +43,7 @@ export class McpServer {
     for (const [name, tool] of Object.entries(toolSCHEMAS)) {
       const toolName = name as ToolName;
       server.registerTool(
-        toolName,
+        "IDE-"+toolName,
         {
           description: tool.description,
           inputSchema: tool.inputSchema,
@@ -223,7 +223,6 @@ export class McpServer {
       // 设置清理回调
       transport.onclose = () => {
         this.sessions.delete(newSessionId);
-        server.close();
       };
     }
   }

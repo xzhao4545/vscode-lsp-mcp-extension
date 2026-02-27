@@ -4,6 +4,7 @@ import { StringBuilder } from '../utils/StringBuilder';
 import { PaginationHelper } from '../utils/PaginationHelper';
 import { SymbolValidator } from '../utils/SymbolValidator';
 import { ContextHelper } from '../utils/ContextHelper';
+import { LocationHelper } from '../utils/LocationHelper';
 
 interface Definition {
   uri: string;
@@ -37,13 +38,13 @@ export class GoToDefinitionTool extends BaseTool {
       return { found: false, definitions: [], hasMore: false, total: 0, error: validationError };
     }
 
-    const locations = await vscode.commands.executeCommand<vscode.Location[]>(
-      'vscode.executeDefinitionProvider',
-      uri,
-      position
-    );
+    const rawLocations = await vscode.commands.executeCommand<
+      vscode.Location | vscode.Location[] | vscode.LocationLink[]
+    >('vscode.executeDefinitionProvider', uri, position);
 
-    if (!locations || locations.length === 0) {
+    const locations = LocationHelper.normalize(rawLocations);
+
+    if (locations.length === 0) {
       return { found: false, definitions: [], hasMore: false, total: 0 };
     }
 

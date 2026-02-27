@@ -6,7 +6,7 @@
 
 ```json
 {
-  "port": 53122,
+  "port": 53221,
   "pid": 12345,
   "startTime": 1708771200000
 }
@@ -47,7 +47,7 @@ async function ensureServerRunning(context: ExtensionContext): Promise<number> {
 ```typescript
 async function startServer(context: ExtensionContext): Promise<number> {
   const serverScript = path.join(context.extensionPath, 'dist', 'server', 'main.js');
-  const port = 53122;
+  const port = 53221;
   
   // 使用 VSCode 内置的 Node.js
   const nodePath = process.execPath;

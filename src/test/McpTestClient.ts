@@ -7,7 +7,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
-const MCP_SERVER_URL = 'http://127.0.0.1:53122/mcp';
+const MCP_SERVER_URL = 'http://127.0.0.1:53221/mcp';
 
 export interface McpToolResult {
   content: string;

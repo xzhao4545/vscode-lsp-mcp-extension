@@ -1,9 +1,5 @@
 # Changelog
 
-All notable changes to the "ide-lsp-for-mcp" extension will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/).
-
 ## [0.0.1] - 2026-02-26
 
 ### Added

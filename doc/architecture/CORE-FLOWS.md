@@ -32,7 +32,7 @@
              └── 成功 → spawn 服务器进程
                       │
                       ▼
-                 node main.js --port 53122 --storage <path>
+                 node main.js --port 53221 --storage <path>
                       │
                       ▼
                  等待服务器就绪 (轮询状态文件)
@@ -44,7 +44,7 @@
 更新 connectionManager 端口
     │
     ▼
-连接 WebSocket: ws://localhost:53122/ws
+连接 WebSocket: ws://localhost:53221/ws
     │
     ▼
 发送注册消息: { type: 'register', folders: [...] }

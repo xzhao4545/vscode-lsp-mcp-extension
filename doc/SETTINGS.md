@@ -6,7 +6,7 @@
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `port` | number | 53122 | MCP 服务器端口 |
+| `port` | number | 53221 | MCP 服务器端口 |
 | `autoStart` | boolean | true | VSCode 启动时自动启动服务 |
 | `timeout` | number | 30000 | 请求超时时间 (毫秒) |
 | `pageSize` | number | 50 | 分页大小 - 列表工具每页返回数 |
@@ -25,7 +25,7 @@
       "properties": {
         "ide-lsp-mcp.port": {
           "type": "number",
-          "default": 53122,
+          "default": 53221,
           "description": "MCP 服务器端口"
         },
         "ide-lsp-mcp.autoStart": {
