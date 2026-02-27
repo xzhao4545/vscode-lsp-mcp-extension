@@ -156,6 +156,10 @@ export class ServerManager {
       args.push('--force');
     }
 
+    if (config.getEnableCors()) {
+      args.push('--cors');
+    }
+
     const serverProcess = spawn(nodePath, args, {
       detached: true,
       stdio: 'ignore'
@@ -173,11 +177,9 @@ export class ServerManager {
     while (Date.now() - start < SERVER_STARTUP_TIMEOUT) {
       const data = await this.stateFile.read();
       
-      if (data && StateUtils.isReady(data.state)) {
-        if (await this.isServerAlive(data.port)) {
-          console.log(`[ServerManager] Server ready on port ${data.port}`);
-          return data.port;
-        }
+      if (data&& await this.isServerAlive(data.port)) {
+        console.log(`[ServerManager] Server ready on port ${data.port}`);
+        return data.port;
       } else if (data && StateUtils.hasError(data.state)) {
         await this.handleErrorState(data);
         return this.tryStartServer();

@@ -27,7 +27,8 @@ export class McpServer {
 
   constructor(
     private registry: ClientRegistry,
-    private taskManager: TaskManager
+    private taskManager: TaskManager,
+    private enableCors: boolean = false
   ) {}
 
   /**
@@ -158,7 +159,6 @@ export class McpServer {
   }
 
   /**
-  /**
    * 处理 HTTP 请求
    */
   async handleRequest(
@@ -166,6 +166,20 @@ export class McpServer {
     res: http.ServerResponse
   ): Promise<void> {
     const url = new URL(req.url || "/", `http://${req.headers.host}`);
+
+    // 添加 CORS 头
+    if (this.enableCors) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, mcp-session-id");
+    }
+
+    // 处理 OPTIONS 预检请求
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
 
     // 健康检查
     if (url.pathname === HEALTH_PATH) {

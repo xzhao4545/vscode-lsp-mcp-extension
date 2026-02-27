@@ -26,13 +26,6 @@ export const SERVER_STATE_FILE = 'server.json';
 /** 服务器健康检查路径 */
 export const HEALTH_PATH = '/health';
 
-/** SSE 路径 */
-/** SSE 路径 (已弃用，保留兼容) */
-export const SSE_PATH = '/sse';
-
-/** 消息路径 (已弃用，保留兼容) */
-export const MESSAGE_PATH = '/message';
-
 /** MCP 端点路径 (新 Streamable HTTP API) */
 export const MCP_ENDPOINT = '/mcp';
 
@@ -43,7 +36,7 @@ export const WS_PATH = '/ws';
 export const SERVER_STARTUP_TIMEOUT = 5000;
 
 /** 健康检查轮询间隔 (毫秒) */
-export const HEALTH_CHECK_INTERVAL = 100;
+export const HEALTH_CHECK_INTERVAL = 200;
 
 /** 环境变量: 禁用自动启动服务器 */
 export const ENV_DISABLE_AUTO_START = 'IDE_LSP_MCP_DISABLE_AUTO_START';

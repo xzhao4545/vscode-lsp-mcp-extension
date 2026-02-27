@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
+import config from '../Config';
 
 interface MoveFileEdit {
   file: string;
@@ -18,6 +19,8 @@ interface MoveFileResult {
   success: boolean;
   newPath: string;
   updatedReferences?: MoveFileEdit[];
+  rejected?: boolean;
+  message?: string;
 }
 
 /**
@@ -32,6 +35,19 @@ export class MoveFileTool extends BaseTool {
     const targetDir = args.targetDir as string;
     const sourceUri = this.resolveUri(projectPath, sourcePath);
     const targetUri = this.resolveUri(projectPath, path.join(targetDir, path.basename(sourcePath)));
+
+    // 检查是否需要用户确认
+    if (!config.getAllowMoveFile()) {
+      const confirmed = await this.confirmMoveFile(sourceUri.fsPath, targetUri.fsPath);
+      if (!confirmed) {
+        return {
+          success: false,
+          newPath: targetUri.fsPath,
+          rejected: true,
+          message: 'User rejected the move operation. Please ask the user why they rejected it and what they would like to do instead.'
+        };
+      }
+    }
 
     // 使用 WorkspaceEdit.renameFile() 来移动文件，VSCode 会自动更新引用
     const workspaceEdit = new vscode.WorkspaceEdit();
@@ -68,11 +84,24 @@ export class MoveFileTool extends BaseTool {
     };
   }
 
+  /**
+   * 弹窗确认移动文件操作
+   */
+  private async confirmMoveFile(sourcePath: string, targetPath: string): Promise<boolean> {
+    const message = vscode.l10n.t('Allow moving file from {0} to {1}?', sourcePath, targetPath);
+    const yes = vscode.l10n.t('Yes');
+    const no = vscode.l10n.t('No');
+    const result = await vscode.window.showWarningMessage(message, { modal: true }, yes, no);
+    return result === yes;
+  }
+
   format(result: MoveFileResult): string {
     const sb = new StringBuilder();
     sb.appendLine('## Move File');
     sb.appendLine();
-    if (result.success) {
+    if (result.rejected) {
+      sb.appendLine(`✗ ${result.message}`);
+    } else if (result.success) {
       sb.appendLine(`✓ File moved to: \`${result.newPath}\``);
       // 显示更新的引用信息
       if (result.updatedReferences && result.updatedReferences.length > 0) {

@@ -12,5 +12,8 @@
   "config.autoStart.description": "VSCode 启动时自动启动MCP服务",
   "config.pageSize.description": "分页大小",
   "config.enableDebug.description": "启用调试模式",
-  "config.contextLines.description": "上下文行数(2n+1)"
+  "config.contextLines.description": "上下文行数(2n+1)",
+  "config.allowMoveFile.description": "允许 MCP 客户端移动文件时无需确认",
+  "config.allowDeleteFile.description": "允许 MCP 客户端删除文件时无需确认",
+  "config.enableCors.description": "启用 MCP 服务器的 CORS 支持"
 }

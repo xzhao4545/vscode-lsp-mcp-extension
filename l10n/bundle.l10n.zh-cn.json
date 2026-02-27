@@ -15,5 +15,9 @@
   "Status": "状态",
   "Success": "成功",
   "Failed": "失败",
-  "Output Result": "输出结果"
+  "Output Result": "输出结果",
+  "Allow moving file from {0} to {1}?": "MCP 客户端请求将文件从 {0} 移动到 {1}，是否允许？",
+  "Allow deleting file {0}?": "MCP 客户端请求删除文件 {0}，是否允许？",
+  "Yes": "是",
+  "No": "否"
 }

@@ -15,5 +15,9 @@
   "Status": "Status",
   "Success": "Success",
   "Failed": "Failed",
-  "Output Result": "Output Result"
+  "Output Result": "Output Result",
+  "Allow moving file from {0} to {1}?": "MCP client requests to move file from {0} to {1}. Allow?",
+  "Allow deleting file {0}?": "MCP client requests to delete file {0}. Allow?",
+  "Yes": "Yes",
+  "No": "No"
 }

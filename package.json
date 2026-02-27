@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/xzhao4545/vscode-lsp-mcp-extension"
   },
-  "version": "0.0.1",
+  "version": "0.0.2",
   "icon": "images/extensionIcon.png",
   "engines": {
     "vscode": "^1.85.0"
@@ -90,6 +90,21 @@
           "type": "number",
           "default": 2,
           "description": "%config.contextLines.description%"
+        },
+        "ide-lsp-mcp.allowMoveFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.allowMoveFile.description%"
+        },
+        "ide-lsp-mcp.allowDeleteFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.allowDeleteFile.description%"
+        },
+        "ide-lsp-mcp.enableCors": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.enableCors.description%"
         }
       }
     }

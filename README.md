@@ -73,6 +73,9 @@ As long as VSCode supports parsing a certain language, this extension can provid
 | `ide-lsp-mcp.pageSize` | number | 50 | Page size |
 | `ide-lsp-mcp.contextLines` | number | 2 | Context lines |
 | `ide-lsp-mcp.enableDebug` | boolean | false | Enable debug panel |
+| `ide-lsp-mcp.allowMoveFile` | boolean | false | Allow MCP client to move files without confirmation |
+| `ide-lsp-mcp.allowDeleteFile` | boolean | false | Allow MCP client to delete files without confirmation |
+| `ide-lsp-mcp.enableCors` | boolean | false | Enable CORS for MCP server |
 
 ## Architecture
 

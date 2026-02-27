@@ -21,11 +21,13 @@ function parseArgs(): {
   port: number;
   storagePath: string;
   forceRestart: boolean;
+  enableCors: boolean;
 } {
   const args = process.argv.slice(2);
   let port = DEFAULT_PORT;
   let storagePath = "";
   let forceRestart = false;
+  let enableCors = false;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -41,13 +43,17 @@ function parseArgs(): {
       case "-f":
         forceRestart = true;
         break;
+      case "--cors":
+      case "-c":
+        enableCors = true;
+        break;
     }
   }
 
-  return { port, storagePath, forceRestart };
+  return { port, storagePath, forceRestart, enableCors };
 }
 
-const { port, storagePath, forceRestart } = parseArgs();
+const { port, storagePath, forceRestart, enableCors } = parseArgs();
 // 默认存储路径: 用户主目录下的 .ide-lsp-mcp
 if (storagePath.length === 0) {
   console.log("[Server] --storage <path> is required");
@@ -108,7 +114,7 @@ async function startServer(): Promise<void> {
   const registry = new ClientRegistry();
   taskManager = new TaskManager();
   const shutdownManager = new ShutdownManager(registry, stateFile.getPath());
-  const mcpServer = new McpServer(registry, taskManager);
+  const mcpServer = new McpServer(registry, taskManager, enableCors);
 
   httpServer = http.createServer((req, res) => {
     mcpServer.handleRequest(req, res).catch((err) => {
