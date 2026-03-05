@@ -31,7 +31,7 @@ export class GetDiagnosticsTool extends BaseTool {
     const diagnostics = vscode.languages.getDiagnostics(uri);
     const result = diagnostics
       .filter((d) => {
-        d.severity <= query;
+        return d.severity <= query;
       })
       .map((d) => ({
         message: d.message,
