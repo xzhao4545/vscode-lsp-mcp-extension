@@ -110,6 +110,11 @@
           "type": "number",
           "default": 5000,
           "description": "%config.diagnosticsTimeout.description%"
+        },
+        "ide-lsp-mcp.nearestSymbolsCount": {
+          "type": "number",
+          "default": 3,
+          "description": "%config.nearestSymbolsCount.description%"
         }
       }
     }

@@ -2,6 +2,7 @@ import { workspace } from 'vscode';
 import {
   DEFAULT_CONTEXT_LINES,
   DEFAULT_DIAGNOSTICS_TIMEOUT,
+  DEFAULT_NEAREST_SYMBOLS_COUNT,
   DEFAULT_PAGE_SIZE,
   DEFAULT_PORT,
   DEFAULT_TIMEOUT
@@ -44,6 +45,10 @@ class Config {
 
   getDiagnosticsTimeout(): number {
     return this.vsConfig.get<number>('diagnosticsTimeout', DEFAULT_DIAGNOSTICS_TIMEOUT);
+  }
+
+  getNearestSymbolsCount(): number {
+    return this.vsConfig.get<number>('nearestSymbolsCount', DEFAULT_NEAREST_SYMBOLS_COUNT);
   }
 
   getConfiguration() {
