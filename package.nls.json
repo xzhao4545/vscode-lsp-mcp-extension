@@ -15,5 +15,6 @@
   "config.contextLines.description": "Number of context lines to show(2n+1)",
   "config.allowMoveFile.description": "Allow MCP client to move files without confirmation",
   "config.allowDeleteFile.description": "Allow MCP client to delete files without confirmation",
-  "config.enableCors.description": "Enable CORS for MCP server"
+  "config.enableCors.description": "Enable CORS for MCP server",
+  "config.diagnosticsTimeout.description": "Timeout for waiting diagnostics (milliseconds)"
 }

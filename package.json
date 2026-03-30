@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/xzhao4545/vscode-lsp-mcp-extension"
   },
-  "version": "0.0.2",
+  "version": "0.0.3",
   "icon": "images/extensionIcon.png",
   "engines": {
     "vscode": "^1.85.0"
@@ -105,6 +105,11 @@
           "type": "boolean",
           "default": false,
           "description": "%config.enableCors.description%"
+        },
+        "ide-lsp-mcp.diagnosticsTimeout": {
+          "type": "number",
+          "default": 5000,
+          "description": "%config.diagnosticsTimeout.description%"
         }
       }
     }

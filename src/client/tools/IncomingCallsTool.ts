@@ -3,7 +3,6 @@ import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
 import { PaginationHelper } from '../utils/PaginationHelper';
 import { ContextHelper } from '../utils/ContextHelper';
-import { GetScopeParentTool } from './GetScopeParentTool';
 import { SymbolValidator } from '../utils/SymbolValidator';
 
 interface IncomingCall {

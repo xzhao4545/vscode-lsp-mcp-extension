@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
-import { PaginationHelper } from '../utils/PaginationHelper';
 import { SymbolValidator } from '../utils/SymbolValidator';
 import { ContextHelper } from '../utils/ContextHelper';
 import { LocationHelper } from '../utils/LocationHelper';

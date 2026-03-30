@@ -17,6 +17,9 @@ export const DEFAULT_PAGE_SIZE = 50;
 /** 上下文行数 */
 export const DEFAULT_CONTEXT_LINES = 3;
 
+/** 诊断等待超时时间 (毫秒) */
+export const DEFAULT_DIAGNOSTICS_TIMEOUT = 5000;
+
 /** 调试日志最大条目数 */
 export const MAX_DEBUG_ENTRIES = 500;
 
