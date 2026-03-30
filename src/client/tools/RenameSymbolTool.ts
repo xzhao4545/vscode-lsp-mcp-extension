@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
-import { SymbolValidator } from '../utils/SymbolValidator';
+import { SymbolValidator, SymbolPosition } from '../utils/SymbolValidator';
 
 interface RenameEdit {
   range: {
@@ -14,6 +14,7 @@ interface RenameEdit {
 interface RenameSymbolResult {
   changes: Record<string, RenameEdit[]>;
   error?: string;
+  suggestedPositions?: SymbolPosition[];
 }
 
 /**
@@ -29,9 +30,13 @@ export class RenameSymbolTool extends BaseTool {
     const symbolName = args.symbolName as string;
 
     // 验证 symbol
-    const validationError = await SymbolValidator.validate(uri, position, symbolName);
-    if (validationError) {
-      return { changes: {}, error: validationError };
+    const validation = await SymbolValidator.validate(uri, position, symbolName);
+    if (!validation.valid) {
+      return {
+        changes: {},
+        error: validation.error,
+        suggestedPositions: validation.suggestedPositions
+      };
     }
 
     const edit = await vscode.commands.executeCommand<vscode.WorkspaceEdit>(
@@ -66,6 +71,17 @@ export class RenameSymbolTool extends BaseTool {
 
     if (result.error) {
       sb.appendLine(this.emptyContent(result.error));
+      
+      if (result.suggestedPositions && result.suggestedPositions.length > 0) {
+        sb.appendLine();
+        sb.appendLine('**Suggested positions for this symbol:**');
+        for (const pos of result.suggestedPositions) {
+          sb.appendLine(`- Line ${pos.line}:${pos.character}`);
+        }
+        sb.appendLine();
+        sb.appendLine('Did you mean one of these positions?');
+      }
+      
       return sb.toString();
     }
 

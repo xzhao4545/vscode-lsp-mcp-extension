@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
-import { SymbolValidator } from '../utils/SymbolValidator';
+import { SymbolValidator, ValidationResult, SymbolPosition } from '../utils/SymbolValidator';
 import { ContextHelper } from '../utils/ContextHelper';
 import { LocationHelper } from '../utils/LocationHelper';
 
@@ -12,12 +12,18 @@ interface Definition {
   context: string[];
 }
 
+interface SuggestedPosition {
+  line: number;
+  character: number;
+}
+
 interface GoToDefinitionResult {
   found: boolean;
   definitions: Definition[];
   hasMore: boolean;
   total: number;
   error?: string;
+  suggestedPositions?: SuggestedPosition[];
 }
 
 /**
@@ -32,9 +38,16 @@ export class GoToDefinitionTool extends BaseTool {
     const symbolName = args.symbolName as string;
 
     // 验证 symbol
-    const validationError = await SymbolValidator.validate(uri, position, symbolName);
-    if (validationError) {
-      return { found: false, definitions: [], hasMore: false, total: 0, error: validationError };
+    const validation = await SymbolValidator.validate(uri, position, symbolName);
+    if (!validation.valid) {
+      return {
+        found: false,
+        definitions: [],
+        hasMore: false,
+        total: 0,
+        error: validation.error,
+        suggestedPositions: validation.suggestedPositions
+      };
     }
 
     const rawLocations = await vscode.commands.executeCommand<
@@ -62,7 +75,21 @@ export class GoToDefinitionTool extends BaseTool {
 
   format(result: GoToDefinitionResult, args: Record<string, unknown>): string {
     if (result.error) {
-      return this.emptyContent(result.error);
+      const sb = new StringBuilder();
+      sb.appendLine(this.emptyContent(result.error));
+      
+      // 如果有候选位置，显示建议
+      if (result.suggestedPositions && result.suggestedPositions.length > 0) {
+        sb.appendLine();
+        sb.appendLine('**Suggested positions for this symbol:**');
+        for (const pos of result.suggestedPositions) {
+          sb.appendLine(`- Line ${pos.line}:${pos.character}`);
+        }
+        sb.appendLine();
+        sb.appendLine('Did you mean one of these positions?');
+      }
+      
+      return sb.toString();
     }
 
     if (!result.found || result.definitions.length === 0) {

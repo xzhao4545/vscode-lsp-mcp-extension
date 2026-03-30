@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
 import { PaginationHelper } from '../utils/PaginationHelper';
-import { SymbolValidator } from '../utils/SymbolValidator';
+import { SymbolValidator, SymbolPosition } from '../utils/SymbolValidator';
 import { ContextHelper } from '../utils/ContextHelper';
 
 interface Reference {
@@ -17,6 +17,7 @@ interface FindReferencesResult {
   hasMore: boolean;
   total: number;
   error?: string;
+  suggestedPositions?: SymbolPosition[];
 }
 
 /**
@@ -31,9 +32,15 @@ export class FindReferencesTool extends BaseTool {
     const symbolName = args.symbolName as string;
 
     // 验证 symbol
-    const validationError = await SymbolValidator.validate(uri, position, symbolName);
-    if (validationError) {
-      return { references: [], hasMore: false, total: 0, error: validationError };
+    const validation = await SymbolValidator.validate(uri, position, symbolName);
+    if (!validation.valid) {
+      return {
+        references: [],
+        hasMore: false,
+        total: 0,
+        error: validation.error,
+        suggestedPositions: validation.suggestedPositions
+      };
     }
 
     const locations = await vscode.commands.executeCommand<vscode.Location[]>(
@@ -57,7 +64,20 @@ export class FindReferencesTool extends BaseTool {
 
   format(result: FindReferencesResult, args: Record<string, unknown>): string {
     if (result.error) {
-      return this.emptyContent(result.error);
+      const sb = new StringBuilder();
+      sb.appendLine(this.emptyContent(result.error));
+      
+      if (result.suggestedPositions && result.suggestedPositions.length > 0) {
+        sb.appendLine();
+        sb.appendLine('**Suggested positions for this symbol:**');
+        for (const pos of result.suggestedPositions) {
+          sb.appendLine(`- Line ${pos.line}:${pos.character}`);
+        }
+        sb.appendLine();
+        sb.appendLine('Did you mean one of these positions?');
+      }
+      
+      return sb.toString();
     }
 
     if (result.references.length === 0) {
@@ -94,5 +114,5 @@ export class FindReferencesTool extends BaseTool {
         }
       }
     );
-}
+  }
 }

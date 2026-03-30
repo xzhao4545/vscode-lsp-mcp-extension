@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
-import { SymbolValidator } from '../utils/SymbolValidator';
+import { SymbolValidator, SymbolPosition } from '../utils/SymbolValidator';
 import { ContextHelper } from '../utils/ContextHelper';
 import { LocationHelper } from '../utils/LocationHelper';
 
@@ -15,6 +15,7 @@ interface Definition {
 interface GetDefinitionTextResult {
   definition: Definition[];
   error?: string;
+  suggestedPositions?: SymbolPosition[];
 }
 
 /**
@@ -29,9 +30,13 @@ export class GetDefinitionTextTool extends BaseTool {
     const symbolName = args.symbolName as string;
 
     // 验证 symbol
-    const validationError = await SymbolValidator.validate(uri, position, symbolName);
-    if (validationError) {
-      return { definition: [], error: validationError };
+    const validation = await SymbolValidator.validate(uri, position, symbolName);
+    if (!validation.valid) {
+      return {
+        definition: [],
+        error: validation.error,
+        suggestedPositions: validation.suggestedPositions
+      };
     }
 
     const rawLocations = await vscode.commands.executeCommand<
@@ -215,6 +220,17 @@ export class GetDefinitionTextTool extends BaseTool {
 
     if (result.error) {
       sb.appendLine(this.emptyContent(result.error));
+      
+      if (result.suggestedPositions && result.suggestedPositions.length > 0) {
+        sb.appendLine();
+        sb.appendLine('**Suggested positions for this symbol:**');
+        for (const pos of result.suggestedPositions) {
+          sb.appendLine(`- Line ${pos.line}:${pos.character}`);
+        }
+        sb.appendLine();
+        sb.appendLine('Did you mean one of these positions?');
+      }
+      
       return sb.toString();
     }
 

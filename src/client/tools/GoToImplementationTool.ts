@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
 import { PaginationHelper } from '../utils/PaginationHelper';
-import { SymbolValidator } from '../utils/SymbolValidator';
+import { SymbolValidator, SymbolPosition } from '../utils/SymbolValidator';
 import { ContextHelper } from '../utils/ContextHelper';
 import { LocationHelper } from '../utils/LocationHelper';
 
@@ -18,6 +18,7 @@ interface GoToImplementationResult {
   hasMore: boolean;
   total: number;
   error?: string;
+  suggestedPositions?: SymbolPosition[];
 }
 
 /**
@@ -32,9 +33,15 @@ export class GoToImplementationTool extends BaseTool {
     const symbolName = args.symbolName as string;
 
     // 验证 symbol
-    const validationError = await SymbolValidator.validate(uri, position, symbolName);
-    if (validationError) {
-      return { implementations: [], hasMore: false, total: 0, error: validationError };
+    const validation = await SymbolValidator.validate(uri, position, symbolName);
+    if (!validation.valid) {
+      return {
+        implementations: [],
+        hasMore: false,
+        total: 0,
+        error: validation.error,
+        suggestedPositions: validation.suggestedPositions
+      };
     }
 
     const rawLocations = await vscode.commands.executeCommand<
@@ -58,7 +65,20 @@ export class GoToImplementationTool extends BaseTool {
 
   format(result: GoToImplementationResult, args: Record<string, unknown>): string {
     if (result.error) {
-      return this.emptyContent(result.error);
+      const sb = new StringBuilder();
+      sb.appendLine(this.emptyContent(result.error));
+      
+      if (result.suggestedPositions && result.suggestedPositions.length > 0) {
+        sb.appendLine();
+        sb.appendLine('**Suggested positions for this symbol:**');
+        for (const pos of result.suggestedPositions) {
+          sb.appendLine(`- Line ${pos.line}:${pos.character}`);
+        }
+        sb.appendLine();
+        sb.appendLine('Did you mean one of these positions?');
+      }
+      
+      return sb.toString();
     }
 
     if (result.implementations.length === 0) {

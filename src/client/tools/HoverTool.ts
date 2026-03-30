@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { BaseTool } from './BaseTool';
 import { StringBuilder } from '../utils/StringBuilder';
-import { SymbolValidator } from '../utils/SymbolValidator';
+import { SymbolValidator, SymbolPosition } from '../utils/SymbolValidator';
 
 interface HoverResult {
   contents: string;
   error?: string;
+  suggestedPositions?: SymbolPosition[];
 }
 
 /**
@@ -20,9 +21,13 @@ export class HoverTool extends BaseTool {
     const symbolName = args.symbolName as string;
 
     // 验证 symbol
-    const validationError = await SymbolValidator.validate(uri, position, symbolName);
-    if (validationError) {
-      return { contents: '', error: validationError };
+    const validation = await SymbolValidator.validate(uri, position, symbolName);
+    if (!validation.valid) {
+      return {
+        contents: '',
+        error: validation.error,
+        suggestedPositions: validation.suggestedPositions
+      };
     }
 
     const hovers = await vscode.commands.executeCommand<vscode.Hover[]>(
@@ -52,6 +57,16 @@ export class HoverTool extends BaseTool {
 
     if (result.error) {
       sb.appendLine(this.emptyContent(result.error));
+      
+      if (result.suggestedPositions && result.suggestedPositions.length > 0) {
+        sb.appendLine();
+        sb.appendLine('**Suggested positions for this symbol:**');
+        for (const pos of result.suggestedPositions) {
+          sb.appendLine(`- Line ${pos.line}:${pos.character}`);
+        }
+        sb.appendLine();
+        sb.appendLine('Did you mean one of these positions?');
+      }
     } else if (!result.contents) {
       sb.appendLine(this.emptyContent('No hover information available'));
     } else {
