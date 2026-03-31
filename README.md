@@ -8,9 +8,10 @@ As long as VSCode supports parsing a certain language, this extension can provid
 
 ## Features
 
-- 16 MCP Tools covering common code intelligence operations
+- 17 MCP Tools covering common code intelligence operations
 - Multi-window and multi-workspace support
 - Pagination support to avoid large data transfers
+- Symbol structure with auto-collapse for large files
 - Code context information for AI understanding
 - Debug panel for tool call logs
 
@@ -22,7 +23,8 @@ As long as VSCode supports parsing a certain language, this extension can provid
 | `goToDefinition` | Navigate to symbol definition |
 | `findReferences` | Find symbol references |
 | `hover` | Get hover information |
-| `getFileStruct` | Get file symbol structure |
+| `getFileStruct` | Get file symbol structure (with auto-collapse) |
+| `getSymbolStruct` | Get specific symbol's structure |
 | `searchSymbolInWorkspace` | Search symbols in workspace |
 | `goToImplementation` | Find interface implementations |
 | `incomingCalls` | Find methods that call this method |
@@ -72,6 +74,7 @@ As long as VSCode supports parsing a certain language, this extension can provid
 | `ide-lsp-mcp.autoStart` | boolean | true | Auto-start server on launch |
 | `ide-lsp-mcp.pageSize` | number | 50 | Page size |
 | `ide-lsp-mcp.contextLines` | number | 2 | Context lines |
+| `ide-lsp-mcp.maxStructLines` | number | 200 | Max output lines for symbol structure (auto mode) |
 | `ide-lsp-mcp.enableDebug` | boolean | false | Enable debug panel |
 | `ide-lsp-mcp.allowMoveFile` | boolean | false | Allow MCP client to move files without confirmation |
 | `ide-lsp-mcp.allowDeleteFile` | boolean | false | Allow MCP client to delete files without confirmation |

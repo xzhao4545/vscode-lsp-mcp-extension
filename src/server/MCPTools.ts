@@ -71,10 +71,26 @@ export const TOOL_SCHEMAS = {
 
   getFileStruct: {
     description: 'Retrieve the file structure in a tree format. If you want to quickly understand the file structure, you should use this method instead of reading the entire file directly.\n' +
-      'After obtaining the file structure, you can call the "hover" method to view documentation, or call the "getDefinitionText" method to access the corresponding implementation details.',
+      'After obtaining the file structure, you can call the "hover" method to view documentation, or call the "getDefinitionText" method to access the corresponding implementation details.\n' +
+      'For large files, the structure may be collapsed to fit within maxStructLines (default 200). Collapsed symbols show *collapsed* marker.\n' +
+      'Use getSymbolStruct to expand collapsed symbols.',
     inputSchema: z.object({
       projectPath,
       filePath,
+      maxDepth: z.number().optional().describe('Depth limit. Negative (default -1) = auto mode (adjust depth to fit maxStructLines). Positive = fixed depth, ignores maxStructLines.'),
+    }),
+  },
+
+  getSymbolStruct: {
+    description: 'Get the structure of a specific symbol (class, method, etc.). Use this to expand collapsed symbols from getFileStruct results.\n' +
+      'Returns the symbol\'s children structure with the same collapse behavior as getFileStruct.',
+    inputSchema: z.object({
+      projectPath,
+      filePath,
+      line,
+      character,
+      symbolName,
+      maxDepth: z.number().optional().describe('Depth limit. Negative (default -1) = auto mode. Positive = fixed depth.'),
     }),
   },
 

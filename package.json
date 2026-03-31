@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/xzhao4545/vscode-lsp-mcp-extension"
   },
-  "version": "0.0.3",
+  "version": "0.0.4",
   "icon": "images/extensionIcon.png",
   "engines": {
     "vscode": "^1.85.0"
@@ -115,6 +115,11 @@
           "type": "number",
           "default": 3,
           "description": "%config.nearestSymbolsCount.description%"
+        },
+        "ide-lsp-mcp.maxStructLines": {
+          "type": "number",
+          "default": 200,
+          "description": "%config.maxStructLines.description%"
         }
       }
     }

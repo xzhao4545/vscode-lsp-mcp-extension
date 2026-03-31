@@ -23,6 +23,9 @@ export const DEFAULT_DIAGNOSTICS_TIMEOUT = 5000;
 /** 查找最近同名符号的数量 */
 export const DEFAULT_NEAREST_SYMBOLS_COUNT = 3;
 
+/** 符号结构最大输出行数 */
+export const DEFAULT_MAX_STRUCT_LINES = 200;
+
 /** 调试日志最大条目数 */
 export const MAX_DEBUG_ENTRIES = 500;
 

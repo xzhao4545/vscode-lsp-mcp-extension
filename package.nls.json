@@ -17,5 +17,6 @@
   "config.allowDeleteFile.description": "Allow MCP client to delete files without confirmation",
   "config.enableCors.description": "Enable CORS for MCP server",
   "config.diagnosticsTimeout.description": "Timeout for waiting diagnostics (milliseconds)",
-  "config.nearestSymbolsCount.description": "Number of nearest symbols to suggest when symbol validation fails"
+  "config.nearestSymbolsCount.description": "Number of nearest symbols to suggest when symbol validation fails",
+  "config.maxStructLines.description": "Maximum output lines for file/symbol structure in auto mode"
 }

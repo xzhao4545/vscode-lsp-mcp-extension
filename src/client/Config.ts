@@ -2,6 +2,7 @@ import { workspace } from 'vscode';
 import {
   DEFAULT_CONTEXT_LINES,
   DEFAULT_DIAGNOSTICS_TIMEOUT,
+  DEFAULT_MAX_STRUCT_LINES,
   DEFAULT_NEAREST_SYMBOLS_COUNT,
   DEFAULT_PAGE_SIZE,
   DEFAULT_PORT,
@@ -49,6 +50,10 @@ class Config {
 
   getNearestSymbolsCount(): number {
     return this.vsConfig.get<number>('nearestSymbolsCount', DEFAULT_NEAREST_SYMBOLS_COUNT);
+  }
+
+  getMaxStructLines(): number {
+    return this.vsConfig.get<number>('maxStructLines', DEFAULT_MAX_STRUCT_LINES);
   }
 
   getConfiguration() {

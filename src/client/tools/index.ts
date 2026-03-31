@@ -11,6 +11,7 @@ export { GoToDefinitionTool } from './GoToDefinitionTool';
 export { FindReferencesTool } from './FindReferencesTool';
 export { HoverTool } from './HoverTool';
 export { GetFileStructTool } from './GetFileStructTool';
+export { GetSymbolStructTool } from './GetSymbolStructTool';
 export { SearchSymbolInWorkspaceTool } from './SearchSymbolInWorkspaceTool';
 export { GoToImplementationTool } from './GoToImplementationTool';
 export { IncomingCallsTool } from './IncomingCallsTool';
