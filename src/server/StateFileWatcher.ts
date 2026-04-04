@@ -2,73 +2,76 @@
  * 状态文件监听器 - 服务器端监听状态文件变化
  */
 
-import * as fs from "fs";
-import { StateFile } from "../shared/stateFile";
-import { ServerState, StateUtils } from "../shared/types";
+import * as fs from "node:fs";
+import type { StateFile } from "../shared/stateFile";
+import type { ServerStateData } from "../shared/types";
+import { StateUtils } from "../shared/types";
 
 /**
  * 状态文件监听器
  */
 export class StateFileWatcher {
-  private watcher: fs.FSWatcher | null = null;
-  private myStartTime: number;
+	private watcher: fs.FSWatcher | null = null;
+	private shuttingDown = false;
 
-  constructor(
-    private stateFile: StateFile,
-    private onShouldShutdown: () => void
-  ) {
-    this.myStartTime = Date.now();
-  }
+	constructor(
+		private stateFile: StateFile,
+		private currentState: ServerStateData,
+		private onShouldShutdown: () => void | Promise<void>,
+	) {}
 
-  /**
-   * 开始监听
-   */
-  start(): void {
-    const stateFilePath = this.stateFile.getPath();
+	/**
+	 * 开始监听
+	 */
+	start(): void {
+		const stateFilePath = this.stateFile.getPath();
 
-    try {
-      this.watcher = fs.watch(stateFilePath, async (eventType) => {
-        if (eventType === "change") {
-          await this.checkShouldShutdown();
-        }
-      });
-    } catch {
-      // 文件可能不存在，忽略
-    }
-  }
+		try {
+			this.watcher = fs.watch(stateFilePath, async (eventType) => {
+				if (eventType === "change") {
+					await this.checkShouldShutdown();
+				}
+			});
+		} catch {
+			// 文件可能不存在，忽略
+		}
+	}
 
-  /**
-   * 检查是否应该关闭
-   */
-  private async checkShouldShutdown(): Promise<void> {
-    try {
-      const data = await this.stateFile.read();
-      if (!data) {
-        return;
-      }
-      // 情况1: 状态为 stopped，应关闭
-      if (StateUtils.isStopped(data.state)) {
-        this.onShouldShutdown();
-        return;
-      }
-      // 情况2: 有更新的服务器启动了
-      if (
-        (data.state & ServerState.STARTING) !== 0 &&
-        data.startTime > this.myStartTime
-      ) {
-        this.onShouldShutdown();
-        return;
-      }
-    } catch {
-      // 文件读取失败，忽略
-    }
-  }
+	/**
+	 * 检查是否应该关闭
+	 */
+	private async checkShouldShutdown(): Promise<void> {
+		if (this.shuttingDown) {
+			return;
+		}
 
-  /**
-   * 停止监听
-   */
-  stop(): void {
-    this.watcher?.close();
-    this.watcher = null;
-  }
+		try {
+			const data = await this.stateFile.read();
+			if (!data) {
+				return;
+			}
+			if (StateUtils.isStopped(data.state)) {
+				this.shuttingDown = true;
+				await this.onShouldShutdown();
+				return;
+			}
+			if (
+				data.instanceId !== this.currentState.instanceId &&
+				StateUtils.isRunning(data.state)
+			) {
+				this.shuttingDown = true;
+				await this.onShouldShutdown();
+			}
+		} catch {
+			// 文件读取失败，忽略
+		}
+	}
+
+	/**
+	 * 停止监听
+	 */
+	stop(): void {
+		this.watcher?.close();
+		this.watcher = null;
+	}
 }

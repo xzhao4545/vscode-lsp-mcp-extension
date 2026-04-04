@@ -1,87 +1,90 @@
-import * as vscode from 'vscode';
-import { BaseTool } from './BaseTool';
-import { StringBuilder } from '../utils/StringBuilder';
-import { PaginationHelper } from '../utils/PaginationHelper';
-import { ContextHelper } from '../utils/ContextHelper';
+import * as vscode from "vscode";
+import { ContextHelper } from "../utils/ContextHelper";
+import { PaginationHelper } from "../utils/PaginationHelper";
+import type { StringBuilder } from "../utils/StringBuilder";
+import { BaseTool } from "./BaseTool";
 
 interface WorkspaceSymbol {
-  name: string;
-  kind: string;
-  uri: string;
-  line: number;
-  character: number;
-  context: string[];
+	name: string;
+	kind: string;
+	uri: string;
+	line: number;
+	character: number;
+	context: string[];
 }
 
 interface SearchSymbolResult {
-  symbols: WorkspaceSymbol[];
-  hasMore: boolean;
-  total: number;
+	symbols: WorkspaceSymbol[];
+	hasMore: boolean;
+	total: number;
 }
 
 /**
  * SearchSymbolInWorkspace - 工作区符号搜索
  */
 export class SearchSymbolInWorkspaceTool extends BaseTool {
-  readonly name = 'searchSymbolInWorkspace';
+	readonly name = "searchSymbolInWorkspace";
 
-  async execute(args: Record<string, unknown>): Promise<SearchSymbolResult> {
-    const query = args.query as string;
-    const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
-      'vscode.executeWorkspaceSymbolProvider',
-      query
-    );
+	async execute(args: Record<string, unknown>): Promise<SearchSymbolResult> {
+		const query = args.query as string;
+		const symbols = await vscode.commands.executeCommand<
+			vscode.SymbolInformation[]
+		>("vscode.executeWorkspaceSymbolProvider", query);
 
-    const result = await Promise.all((symbols || []).map(async s => {
-      const context = await ContextHelper.getContextAroundLine(
-        s.location.uri,
-        s.location.range.start.line + 1,
-        0
-      );
-      return {
-        name: s.name,
-        kind: vscode.SymbolKind[s.kind],
-        uri: s.location.uri.fsPath,
-        line: s.location.range.start.line + 1,
-        character: s.location.range.start.character,
-        context
-      };
-    }));
+		const result = await Promise.all(
+			(symbols || []).map(async (s) => {
+				const context = await ContextHelper.getContextAroundLine(
+					s.location.uri,
+					s.location.range.start.line + 1,
+					0,
+				);
+				return {
+					name: s.name,
+					kind: vscode.SymbolKind[s.kind],
+					uri: s.location.uri.fsPath,
+					line: s.location.range.start.line + 1,
+					character: s.location.range.start.character,
+					context,
+				};
+			}),
+		);
 
-    return { symbols: result, hasMore: false, total: result.length };
-  }
+		return { symbols: result, hasMore: false, total: result.length };
+	}
 
-  format(result: SearchSymbolResult, args: Record<string, unknown>): string {
-    if (result.symbols.length === 0) {
-      return this.emptyContent('No symbols found');
-    }
-    const page = (args.page as number) || 1;
-    const paginated = PaginationHelper.paginate(result.symbols, page);
-    // 按 URI 聚合
-    const grouped = new Map<string, WorkspaceSymbol[]>();
-    for (const sym of paginated.items) {
-      const syms = grouped.get(sym.uri) || [];
-      syms.push(sym);
-      grouped.set(sym.uri, syms);
-    }
-    return PaginationHelper.wrapPaginated(
-      'Workspace Symbols',
-      paginated.page,
-      paginated.totalPages,
-      paginated.totalItems,
-      paginated.hasMore,
-      (sb: StringBuilder) => {
-        for (const [uri, syms] of Array.from(grouped.entries())) {
-          sb.appendLine(`## \`${uri}\``);
-          for (const sym of syms) {
-            sb.appendLine(`**${sym.name}** (${sym.kind}) - Location ${sym.line}:${sym.character}`);
-            sb.appendLine('```');
-            sb.appendLine(ContextHelper.formatContext(sym.context));
-            sb.appendLine('```');
-          }
-          sb.appendLine();
-        }
-      }
-    );
-}
+	format(result: SearchSymbolResult, args: Record<string, unknown>): string {
+		if (result.symbols.length === 0) {
+			return this.emptyContent("No symbols found");
+		}
+		const page = (args.page as number) || 1;
+		const paginated = PaginationHelper.paginate(result.symbols, page);
+		// 按 URI 聚合
+		const grouped = new Map<string, WorkspaceSymbol[]>();
+		for (const sym of paginated.items) {
+			const syms = grouped.get(sym.uri) || [];
+			syms.push(sym);
+			grouped.set(sym.uri, syms);
+		}
+		return PaginationHelper.wrapPaginated(
+			"Workspace Symbols",
+			paginated.page,
+			paginated.totalPages,
+			paginated.totalItems,
+			paginated.hasMore,
+			(sb: StringBuilder) => {
+				for (const [uri, syms] of Array.from(grouped.entries())) {
+					sb.appendLine(`## \`${uri}\``);
+					for (const sym of syms) {
+						sb.appendLine(
+							`**${sym.name}** (${sym.kind}) - Location ${sym.line}:${sym.character}`,
+						);
+						sb.appendLine("```");
+						sb.appendLine(ContextHelper.formatContext(sym.context));
+						sb.appendLine("```");
+					}
+					sb.appendLine();
+				}
+			},
+		);
+	}
 }

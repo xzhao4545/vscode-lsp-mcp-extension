@@ -1,176 +1,178 @@
 {
-  "name": "ide-lsp-for-mcp",
-  "displayName": "%displayName%",
-  "description": "%description%",
-  "publisher": "xzhao",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/xzhao4545/vscode-lsp-mcp-extension"
-  },
-  "version": "0.0.4",
-  "icon": "images/extensionIcon.png",
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "categories": [
-    "AI","Other"
-  ],
-  "activationEvents": [
-    "onStartupFinished"
-  ],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "ide-lsp-mcp.showStatus",
-        "title": "%command.showStatus%"
-      },
-      {
-        "command": "ide-lsp-mcp.reconnect",
-        "title": "%command.reconnect%"
-      },
-      {
-        "command": "ide-lsp-mcp.restartServer",
-        "title": "%command.restartServer%"
-      },
-      {
-        "command": "ide-lsp-mcp.clearDebugLog",
-        "title": "%command.clearDebugLog%",
-        "icon": "$(clear-all)"
-      },
-      {
-        "command": "ide-lsp-mcp.showDebugDetail",
-        "title": "%command.showDebugDetail%"
-      }
-    ],
-    "views": {
-      "debug": [
-        {
-          "icon": "images/debugWindowIcon.svg",
-          "id": "ideLspMcpDebug",
-          "name": "%view.debug.name%",
-          "when": "config.ide-lsp-mcp.enableDebug",
-          "contextualTitle": "%view.debug.name%"
-        }
-      ]
-    },
-    "menus": {
-      "view/title": [
-        {
-          "command": "ide-lsp-mcp.clearDebugLog",
-          "when": "view == ideLspMcpDebug",
-          "group": "navigation"
-        }
-      ]
-    },
-    "configuration": {
-      "title": "%config.title%",
-      "properties": {
-        "ide-lsp-mcp.port": {
-          "type": "number",
-          "default": 53221,
-          "description": "%config.port.description%"
-        },
-        "ide-lsp-mcp.autoStart": {
-          "type": "boolean",
-          "default": true,
-          "description": "%config.autoStart.description%"
-        },
-        "ide-lsp-mcp.pageSize": {
-          "type": "number",
-          "default": 50,
-          "description": "%config.pageSize.description%"
-        },
-        "ide-lsp-mcp.enableDebug": {
-          "type": "boolean",
-          "default": false,
-          "description": "%config.enableDebug.description%"
-        },
-        "ide-lsp-mcp.contextLines": {
-          "type": "number",
-          "default": 2,
-          "description": "%config.contextLines.description%"
-        },
-        "ide-lsp-mcp.allowMoveFile": {
-          "type": "boolean",
-          "default": false,
-          "description": "%config.allowMoveFile.description%"
-        },
-        "ide-lsp-mcp.allowDeleteFile": {
-          "type": "boolean",
-          "default": false,
-          "description": "%config.allowDeleteFile.description%"
-        },
-        "ide-lsp-mcp.enableCors": {
-          "type": "boolean",
-          "default": false,
-          "description": "%config.enableCors.description%"
-        },
-        "ide-lsp-mcp.diagnosticsTimeout": {
-          "type": "number",
-          "default": 5000,
-          "description": "%config.diagnosticsTimeout.description%"
-        },
-        "ide-lsp-mcp.nearestSymbolsCount": {
-          "type": "number",
-          "default": 3,
-          "description": "%config.nearestSymbolsCount.description%"
-        },
-        "ide-lsp-mcp.maxStructLines": {
-          "type": "number",
-          "default": 200,
-          "description": "%config.maxStructLines.description%"
-        }
-      }
-    }
-  },
-  "scripts": {
-    "build": "pnpm vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links",
-    "vscode:prepublish": "pnpm run package",
-    "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
-    "watch": "npm-run-all -p watch:*",
-    "watch:esbuild": "node esbuild.js --watch",
-    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
-    "check-types": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vscode-test",
-    "test-mcp": "mocha ./src/test/mcp.test.ts",
-    "server:build": "node esbuild.js --server-only",
-    "server:start": "node --enable-source-maps dist/server/main.js -f --storage c:\\Users\\Learn\\AppData\\Roaming\\Code\\User\\globalStorage\\undefined_publisher.ide-lsp-for-mcp",
-    "server:dev": "node esbuild.js --server-only && pnpm run server:start"
-  },
-  "devDependencies": {
-    "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
-    "@types/vscode": "^1.85.0",
-    "@types/ws": "^8.5.10",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2",
-    "chai": "^6.2.2",
-    "esbuild": "^0.27.2",
-    "eslint": "^9.39.2",
-    "mocha": "^11.7.5",
-    "npm-run-all": "^4.1.5",
-    "source-map": "^0.7.6",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.54.0"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.27.1",
-    "chokidar": "^5.0.0",
-    "ws": "^8.16.0",
-    "zod": "4"
-  },
-  "l10n": "./l10n",
-  "mocha": {
-    "require": "ts-node/register",
-    "loader": "ts-node/esm",
-    "ui": "tdd",
-    "timeout": 5000
-  }
+	"name": "ide-lsp-for-mcp",
+	"displayName": "%displayName%",
+	"description": "%description%",
+	"publisher": "xzhao",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/xzhao4545/vscode-lsp-mcp-extension"
+	},
+	"version": "0.0.4",
+	"icon": "images/extensionIcon.png",
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"categories": [
+		"AI",
+		"Other"
+	],
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "ide-lsp-mcp.showStatus",
+				"title": "%command.showStatus%"
+			},
+			{
+				"command": "ide-lsp-mcp.reconnect",
+				"title": "%command.reconnect%"
+			},
+			{
+				"command": "ide-lsp-mcp.restartServer",
+				"title": "%command.restartServer%"
+			},
+			{
+				"command": "ide-lsp-mcp.clearDebugLog",
+				"title": "%command.clearDebugLog%",
+				"icon": "$(clear-all)"
+			},
+			{
+				"command": "ide-lsp-mcp.showDebugDetail",
+				"title": "%command.showDebugDetail%"
+			}
+		],
+		"views": {
+			"debug": [
+				{
+					"icon": "images/debugWindowIcon.svg",
+					"id": "ideLspMcpDebug",
+					"name": "%view.debug.name%",
+					"when": "config.ide-lsp-mcp.enableDebug",
+					"contextualTitle": "%view.debug.name%"
+				}
+			]
+		},
+		"menus": {
+			"view/title": [
+				{
+					"command": "ide-lsp-mcp.clearDebugLog",
+					"when": "view == ideLspMcpDebug",
+					"group": "navigation"
+				}
+			]
+		},
+		"configuration": {
+			"title": "%config.title%",
+			"properties": {
+				"ide-lsp-mcp.port": {
+					"type": "number",
+					"default": 53221,
+					"description": "%config.port.description%"
+				},
+				"ide-lsp-mcp.autoStart": {
+					"type": "boolean",
+					"default": true,
+					"description": "%config.autoStart.description%"
+				},
+				"ide-lsp-mcp.pageSize": {
+					"type": "number",
+					"default": 50,
+					"description": "%config.pageSize.description%"
+				},
+				"ide-lsp-mcp.enableDebug": {
+					"type": "boolean",
+					"default": false,
+					"description": "%config.enableDebug.description%"
+				},
+				"ide-lsp-mcp.contextLines": {
+					"type": "number",
+					"default": 2,
+					"description": "%config.contextLines.description%"
+				},
+				"ide-lsp-mcp.allowMoveFile": {
+					"type": "boolean",
+					"default": false,
+					"description": "%config.allowMoveFile.description%"
+				},
+				"ide-lsp-mcp.allowDeleteFile": {
+					"type": "boolean",
+					"default": false,
+					"description": "%config.allowDeleteFile.description%"
+				},
+				"ide-lsp-mcp.enableCors": {
+					"type": "boolean",
+					"default": false,
+					"description": "%config.enableCors.description%"
+				},
+				"ide-lsp-mcp.diagnosticsTimeout": {
+					"type": "number",
+					"default": 5000,
+					"description": "%config.diagnosticsTimeout.description%"
+				},
+				"ide-lsp-mcp.nearestSymbolsCount": {
+					"type": "number",
+					"default": 3,
+					"description": "%config.nearestSymbolsCount.description%"
+				},
+				"ide-lsp-mcp.maxStructLines": {
+					"type": "number",
+					"default": 200,
+					"description": "%config.maxStructLines.description%"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"build": "pnpm vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links",
+		"vscode:prepublish": "pnpm run package",
+		"compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
+		"watch": "npm-run-all -p watch:*",
+		"watch:esbuild": "node esbuild.js --watch",
+		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+		"package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
+		"compile-tests": "tsc -p . --outDir out",
+		"watch-tests": "tsc -p . -w --outDir out",
+		"pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+		"check-types": "tsc --noEmit",
+		"lint": "eslint src",
+		"test": "vscode-test",
+		"test-mcp": "mocha ./src/test/mcp.test.ts",
+		"server:build": "node esbuild.js --server-only",
+		"server:start": "node --enable-source-maps dist/server/main.js -f --storage c:\\Users\\Learn\\AppData\\Roaming\\Code\\User\\globalStorage\\undefined_publisher.ide-lsp-for-mcp",
+		"server:dev": "node esbuild.js --server-only && pnpm run server:start"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.10",
+		"@types/mocha": "^10.0.10",
+		"@types/node": "22.x",
+		"@types/vscode": "^1.85.0",
+		"@types/ws": "^8.5.10",
+		"@vscode/test-cli": "^0.0.12",
+		"@vscode/test-electron": "^2.5.2",
+		"chai": "^6.2.2",
+		"esbuild": "^0.27.2",
+		"eslint": "^9.39.2",
+		"mocha": "^11.7.5",
+		"npm-run-all": "^4.1.5",
+		"source-map": "^0.7.6",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.9.3",
+		"typescript-eslint": "^8.54.0"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.27.1",
+		"chokidar": "^5.0.0",
+		"ws": "^8.16.0",
+		"zod": "4"
+	},
+	"l10n": "./l10n",
+	"mocha": {
+		"require": "ts-node/register",
+		"loader": "ts-node/esm",
+		"ui": "tdd",
+		"timeout": 5000
+	}
 }

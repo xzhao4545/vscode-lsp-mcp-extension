@@ -2,62 +2,64 @@
  * MCP 服务器入口
  */
 
-import * as http from "http";
-import * as path from "path";
-import { ClientRegistry } from "./ClientRegistry";
-import { TaskManager } from "./TaskManager";
-import { ShutdownManager } from "./ShutdownManager";
-import { WebSocketServer } from "./WebSocketServer";
-import { McpServer } from "./McpServer";
-import { StateFileWatcher } from "./StateFileWatcher";
+import * as http from "node:http";
+import * as path from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
+import {
+	DEFAULT_PORT,
+	RESTART_WAIT_TIME,
+	SERVER_LOCK_FILE,
+} from "../shared/constants";
 import { FileLock, isProcessAlive } from "../shared/fileLock";
 import { StateFile } from "../shared/stateFile";
-import { DEFAULT_PORT, SERVER_LOCK_FILE } from "../shared/constants";
-import { ServerStateData, StateUtils } from "../shared/types";
-import { setTimeout as sleep } from "timers/promises";
+import { type ServerStateData, StateUtils } from "../shared/types";
+import { ClientRegistry } from "./ClientRegistry";
+import { McpServer } from "./McpServer";
+import { ShutdownManager } from "./ShutdownManager";
+import { StateFileWatcher } from "./StateFileWatcher";
+import { TaskManager } from "./TaskManager";
+import { WebSocketServer } from "./WebSocketServer";
 
-// 解析命令行参数
 function parseArgs(): {
-  port: number;
-  storagePath: string;
-  forceRestart: boolean;
-  enableCors: boolean;
+	port: number;
+	storagePath: string;
+	forceRestart: boolean;
+	enableCors: boolean;
 } {
-  const args = process.argv.slice(2);
-  let port = DEFAULT_PORT;
-  let storagePath = "";
-  let forceRestart = false;
-  let enableCors = false;
+	const args = process.argv.slice(2);
+	let port = DEFAULT_PORT;
+	let storagePath = "";
+	let forceRestart = false;
+	let enableCors = false;
 
-  for (let i = 0; i < args.length; i++) {
-    switch (args[i]) {
-      case "--port":
-      case "-p":
-        port = parseInt(args[++i], 10);
-        break;
-      case "--storage":
-      case "-s":
-        storagePath = args[++i];
-        break;
-      case "--force":
-      case "-f":
-        forceRestart = true;
-        break;
-      case "--cors":
-      case "-c":
-        enableCors = true;
-        break;
-    }
-  }
+	for (let i = 0; i < args.length; i++) {
+		switch (args[i]) {
+			case "--port":
+			case "-p":
+				port = parseInt(args[++i], 10);
+				break;
+			case "--storage":
+			case "-s":
+				storagePath = args[++i];
+				break;
+			case "--force":
+			case "-f":
+				forceRestart = true;
+				break;
+			case "--cors":
+			case "-c":
+				enableCors = true;
+				break;
+		}
+	}
 
-  return { port, storagePath, forceRestart, enableCors };
+	return { port, storagePath, forceRestart, enableCors };
 }
 
 const { port, storagePath, forceRestart, enableCors } = parseArgs();
-// 默认存储路径: 用户主目录下的 .ide-lsp-mcp
 if (storagePath.length === 0) {
-  console.log("[Server] --storage <path> is required");
-  process.exit(1);
+	console.log("[Server] --storage <path> is required");
+	process.exit(1);
 }
 const lockPath = path.join(storagePath, SERVER_LOCK_FILE);
 const stateFile = new StateFile(storagePath);
@@ -67,181 +69,232 @@ let httpServer: http.Server | null = null;
 let wsServer: WebSocketServer | null = null;
 let stateFileWatcher: StateFileWatcher | null = null;
 let taskManager: TaskManager | null = null;
+let mcpServer: McpServer | null = null;
+let shutdownManager: ShutdownManager | null = null;
+let currentState: ServerStateData | null = null;
+let shutdownPromise: Promise<void> | null = null;
+let shuttingDown = false;
+let exitCode = 0;
+let lockReleased = false;
 
-/**
- * 主启动函数
- */
 async function main(): Promise<void> {
-  console.log(`[Server] Starting MCP server on port ${port}...`);
+	console.log(`[Server] Starting MCP server on port ${port}...`);
 
-  // 1. 尝试获取文件锁
-  const lockAcquired = await fileLock.tryAcquire(0);
-  if (!lockAcquired) {
-    console.log("[Server] Another process is starting the server, exiting...");
-    process.exit(0);
-  }
-  // 2. 检查状态文件
-  const currentState = await stateFile.read();
-  try {
-    const hasServerRunning =
-      currentState &&
-      StateUtils.isRunning(currentState.state) &&
-      isProcessAlive(currentState.pid);
-    // 服务器正在运行且非强制模式
-    if (hasServerRunning && !forceRestart) {
-      console.log("[Server] Server already running, exiting...");
-      await stateFile.writeAlreadyRunning(currentState);
-      await fileLock.release();
-      process.exit(0);
-    }
-    // 3. 写入进程已启动状态
-    await stateFile.writeStarting(port);
-    //若已有进程运行，等待一定时间
-    if (hasServerRunning) {
-      await sleep(200);
-    }
-    // 4. 启动服务器
-    await startServer();
-  } catch (err) {
-    await handleStartupError(err, currentState);
-  }
+	const lockAcquired = await fileLock.tryAcquire(0);
+	if (!lockAcquired) {
+		console.log("[Server] Another process is starting the server, exiting...");
+		process.exit(0);
+	}
+
+	const existingState = await stateFile.read();
+	try {
+		const hasServerRunning =
+			existingState &&
+			StateUtils.isRunning(existingState.state) &&
+			isProcessAlive(existingState.pid);
+		if (hasServerRunning && !forceRestart) {
+			console.log("[Server] Server already running, exiting...");
+			await stateFile.writeAlreadyRunning(existingState);
+			await releaseLock();
+			process.exit(0);
+		}
+
+		currentState = await stateFile.writeStarting(port);
+		if (hasServerRunning) {
+			await sleep(200);
+		}
+		await startServer();
+	} catch (err) {
+		await handleStartupError(err, existingState);
+	}
 }
 
-/**
- * 启动 HTTP 服务器
- */
 async function startServer(): Promise<void> {
-  const registry = new ClientRegistry();
-  taskManager = new TaskManager();
-  const shutdownManager = new ShutdownManager(registry, stateFile.getPath());
-  const mcpServer = new McpServer(registry, taskManager, enableCors);
+	const registry = new ClientRegistry();
+	taskManager = new TaskManager();
+	const taskMgr = taskManager;
+	if (!taskMgr) {
+		throw new Error("Task manager not initialized");
+	}
+	shutdownManager = new ShutdownManager(registry, () =>
+		requestShutdown("idle", { removeStateFile: true }),
+	);
+	mcpServer = new McpServer(registry, taskMgr, enableCors);
+	const activeMcpServer = mcpServer;
 
-  httpServer = http.createServer((req, res) => {
-    mcpServer.handleRequest(req, res).catch((err) => {
-      console.error("[Server] Request error:", err);
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Internal server error" }));
-    });
-  });
+	httpServer = http.createServer((req, res) => {
+		const server = activeMcpServer;
+		if (!server) {
+			res.writeHead(503, { "Content-Type": "application/json" });
+			res.end(JSON.stringify({ error: "Server shutting down" }));
+			return;
+		}
 
-  // 创建 WebSocket 服务器
-  wsServer = new WebSocketServer(
-    httpServer,
-    registry,
-    taskManager,
-    shutdownManager
-  );
+		server.handleRequest(req, res).catch((err) => {
+			console.error("[Server] Request error:", err);
+			res.writeHead(500, { "Content-Type": "application/json" });
+			res.end(JSON.stringify({ error: "Internal server error" }));
+		});
+	});
 
-  // 设置重启处理
-  wsServer.onRestart(handleRestartRequest);
+	const idleShutdownManager = shutdownManager;
+	if (!idleShutdownManager) {
+		throw new Error("Shutdown manager not initialized");
+	}
 
-  return new Promise((resolve, reject) => {
-    httpServer!.on("error", (err: NodeJS.ErrnoException) => {
-      reject(err);
-    });
+	wsServer = new WebSocketServer(
+		httpServer,
+		registry,
+		taskMgr,
+		idleShutdownManager,
+	);
 
-    httpServer!.listen(port, async () => {
-      console.log(`[Server] MCP server listening on port ${port}`);
+	wsServer.onRestart(() => {
+		void handleRestartRequest();
+	});
 
-      // 写入运行中状态
-      await stateFile.writeRunning(port);
+	const server = httpServer;
+	if (!server) {
+		throw new Error("HTTP server not initialized");
+	}
 
-      // 释放锁
-      await fileLock.release();
+	await new Promise<void>((resolve, reject) => {
+		server.once("error", (err: NodeJS.ErrnoException) => {
+			reject(err);
+		});
 
-      // 启动状态文件监听
-      stateFileWatcher = new StateFileWatcher(stateFile, handleShouldShutdown);
-      stateFileWatcher.start();
-
-      console.log(`[Server] State file written, lock released`);
-      resolve();
-    });
-  });
+		server.listen(port, () => {
+			void (async () => {
+				try {
+					console.log(`[Server] MCP server listening on port ${port}`);
+					const runningState = currentState;
+					if (!runningState) {
+						throw new Error("Server state not initialized");
+					}
+					currentState = await stateFile.writeRunning(port, runningState);
+					await releaseLock();
+					if (!currentState) {
+						throw new Error("Server state not initialized");
+					}
+					stateFileWatcher = new StateFileWatcher(stateFile, currentState, () =>
+						requestShutdown("state-file"),
+					);
+					stateFileWatcher.start();
+					console.log(`[Server] State file written, lock released`);
+					resolve();
+				} catch (err) {
+					reject(err);
+				}
+			})();
+		});
+	});
 }
 
-/**
- * 处理启动错误
- */
 async function handleStartupError(
-  err: unknown,
-  rawState: ServerStateData | null
+	err: unknown,
+	rawState: ServerStateData | null,
 ): Promise<void> {
-  const error = err as NodeJS.ErrnoException;
+	const error = err as NodeJS.ErrnoException;
 
-  if (error.code === "EADDRINUSE") {
-    console.error(`[Server] Port ${port} is already in use`);
-    await stateFile.writePortConflict(
-      port,
-      rawState,
-      `Port ${port} is already in use`
-    );
-  } else {
-    console.error("[Server] Failed to start:", error.message);
-    await stateFile.writeError(port, rawState, error.message);
-  }
-  await fileLock.release();
-  process.exit(1);
+	if (error.code === "EADDRINUSE") {
+		console.error(`[Server] Port ${port} is already in use`);
+		currentState = await stateFile.writePortConflict(
+			port,
+			rawState,
+			`Port ${port} is already in use`,
+		);
+	} else {
+		console.error("[Server] Failed to start:", error.message);
+		currentState = await stateFile.writeError(port, rawState, error.message);
+	}
+	await releaseLock();
+	process.exit(1);
 }
 
-/**
- * 处理重启请求
- */
 async function handleRestartRequest(): Promise<void> {
-  console.log("[Server] Restart requested...");
+	if (shuttingDown) {
+		return;
+	}
 
-  // 写入重启中状态
-  await stateFile.writeRestarting(port);
-
-  // 等待客户端准备
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // 写入已停止状态
-  await stateFile.writeStopped(port);
-
-  // 关闭服务器
-  await shutdown();
+	console.log("[Server] Restart requested...");
+	const restartingState = currentState;
+	if (!restartingState) {
+		throw new Error("Server state not initialized");
+	}
+	currentState = await stateFile.writeRestarting(port, restartingState);
+	await sleep(RESTART_WAIT_TIME);
+	await requestShutdown("restart");
 }
 
-/**
- * 处理应该关闭的情况
- */
-function handleShouldShutdown(): void {
-  console.log("[Server] Should shutdown detected...");
-  shutdown();
+async function requestShutdown(
+	reason: string,
+	options?: { removeStateFile?: boolean; code?: number },
+): Promise<void> {
+	if (shutdownPromise) {
+		return shutdownPromise;
+	}
+
+	shuttingDown = true;
+	exitCode = options?.code ?? 0;
+	console.log(`[Server] Shutting down (${reason})...`);
+
+	shutdownPromise = (async () => {
+		stateFileWatcher?.stop();
+		shutdownManager?.stop();
+		taskManager?.cleanup();
+		await wsServer?.close();
+		await mcpServer?.close();
+		await closeHttpServer();
+
+		if (options?.removeStateFile) {
+			await stateFile.remove();
+		} else if (currentState) {
+			currentState = await stateFile.writeStopped(port, currentState);
+		} else {
+			currentState = await stateFile.writeStopped(port, null);
+		}
+
+		await releaseLock();
+	})();
+
+	try {
+		await shutdownPromise;
+	} finally {
+		process.exit(exitCode);
+	}
 }
 
-/**
- * 关闭服务器
- */
-async function shutdown(): Promise<void> {
-  console.log("[Server] Shutting down...");
+async function closeHttpServer(): Promise<void> {
+	if (!httpServer) {
+		return;
+	}
 
-  stateFileWatcher?.stop();
-  taskManager?.cleanup();
-
-  if (httpServer) {
-    wsServer?.close();
-    httpServer.close(() => process.exit(0));
-  } else {
-    process.exit(0);
-  }
+	const server = httpServer;
+	httpServer = null;
+	await new Promise<void>((resolve) => {
+		server.close(() => resolve());
+	});
 }
 
-// 优雅关闭
-process.on("SIGTERM", async () => {
-  console.log("[Server] Received SIGTERM");
-  await stateFile.writeStopped(port);
-  await shutdown();
+async function releaseLock(): Promise<void> {
+	if (lockReleased) {
+		return;
+	}
+	lockReleased = true;
+	await fileLock.release();
+}
+
+process.on("SIGTERM", () => {
+	console.log("[Server] Received SIGTERM");
+	void requestShutdown("sigterm");
 });
 
-process.on("SIGINT", async () => {
-  console.log("[Server] Received SIGINT");
-  await stateFile.writeStopped(port);
-  await shutdown();
+process.on("SIGINT", () => {
+	console.log("[Server] Received SIGINT");
+	void requestShutdown("sigint");
 });
 
-// 启动
 main().catch((err) => {
-  console.error("[Server] Fatal error:", err);
-  process.exit(1);
+	console.error("[Server] Fatal error:", err);
+	process.exit(1);
 });

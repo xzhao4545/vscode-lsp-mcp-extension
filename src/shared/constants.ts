@@ -30,16 +30,16 @@ export const DEFAULT_MAX_STRUCT_LINES = 200;
 export const MAX_DEBUG_ENTRIES = 500;
 
 /** 服务器状态文件名 */
-export const SERVER_STATE_FILE = 'server.json';
+export const SERVER_STATE_FILE = "server.json";
 
 /** 服务器健康检查路径 */
-export const HEALTH_PATH = '/health';
+export const HEALTH_PATH = "/health";
 
 /** MCP 端点路径 (新 Streamable HTTP API) */
-export const MCP_ENDPOINT = '/mcp';
+export const MCP_ENDPOINT = "/mcp";
 
 /** WebSocket 路径 */
-export const WS_PATH = '/ws';
+export const WS_PATH = "/ws";
 
 /** 服务器启动超时 (毫秒) */
 export const SERVER_STARTUP_TIMEOUT = 5000;
@@ -48,16 +48,16 @@ export const SERVER_STARTUP_TIMEOUT = 5000;
 export const HEALTH_CHECK_INTERVAL = 200;
 
 /** 环境变量: 禁用自动启动服务器 */
-export const ENV_DISABLE_AUTO_START = 'IDE_LSP_MCP_DISABLE_AUTO_START';
+export const ENV_DISABLE_AUTO_START = "IDE_LSP_MCP_DISABLE_AUTO_START";
 
 /** 环境变量: 服务器端口 */
-export const ENV_MCP_PORT = 'MCP_PORT';
+export const ENV_MCP_PORT = "MCP_PORT";
 
 /** 环境变量: 存储路径 */
-export const ENV_MCP_STORAGE_PATH = 'MCP_STORAGE_PATH';
+export const ENV_MCP_STORAGE_PATH = "MCP_STORAGE_PATH";
 
 /** 服务器锁文件名 */
-export const SERVER_LOCK_FILE = 'server.lock';
+export const SERVER_LOCK_FILE = "server.lock";
 
 /** 锁超时时间 (毫秒) */
 export const LOCK_TIMEOUT = 30000;
@@ -78,4 +78,4 @@ export const RECONNECT_MAX_ATTEMPTS = 10;
 export const RESTART_WAIT_TIME = 1000;
 
 /** 环境变量: 强制重启 */
-export const ENV_FORCE_RESTART = 'MCP_FORCE_RESTART';
+export const ENV_FORCE_RESTART = "MCP_FORCE_RESTART";
