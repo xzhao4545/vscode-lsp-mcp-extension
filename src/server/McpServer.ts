@@ -42,7 +42,7 @@ export class McpServer {
 		);
 
 		for (const [name, tool] of Object.entries(toolSCHEMAS)) {
-			const toolName = name as ToolName;
+			const toolName = `IDE-${name}` as ToolName;
 			server.registerTool(
 				toolName,
 				{
@@ -143,7 +143,10 @@ export class McpServer {
 		if (projectPath) {
 			const formatedPath = ClientRegistry.normalizePath(projectPath);
 			const targetWorkspace = result.workspaces?.filter(
-				(ws) => ws.folders.filter((f) => f.path === formatedPath).length > 0,
+				(ws) =>
+					ws.folders.some((f) =>
+						ClientRegistry.containsPath(formatedPath, f.path),
+					),
 			);
 			if (targetWorkspace && targetWorkspace.length <= 0) {
 				return `The workspace corresponding to the specified \`${formatedPath}\` cannot be found.`;

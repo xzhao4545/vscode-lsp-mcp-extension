@@ -24,4 +24,10 @@ export default [{
         "no-throw-literal": "warn",
         semi: "warn",
     },
+},{
+    ignores: [
+        "dist/**",
+        "node_modules/**",
+        "out/**",
+    ],
 }];

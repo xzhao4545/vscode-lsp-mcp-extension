@@ -216,7 +216,7 @@ export const TOOL_SCHEMAS = {
 			"Search files by name pattern in a directory. Supports regex matching.",
 		inputSchema: z.object({
 			projectPath,
-			pattern: z.string().describe("File name pattern (regex)"),
+			pattern: z.string().describe("File name pattern (regex, not glob pattern)"),
 			directory: z
 				.string()
 				.optional()

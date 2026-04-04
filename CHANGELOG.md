@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.5] - 2026-04-05
+
+### Changed
+
+- `listOpenProjects` 在传入 `projectPath` 时，改为匹配该路径下的已打开项目路径，而不再只接受工作区根路径本身
+- 补充并校正 README 中对 `listOpenProjects` 过滤行为与当前配置默认值的说明
+
+## [0.0.4] - 2026-04-05
+
+### Added
+
+- 新增 `getSymbolStruct` 工具，用于展开 `getFileStruct` 中折叠的符号节点
+- 新增配置项 `diagnosticsTimeout`，控制 `getDiagnostics` 等待诊断信息的超时时间（默认 5000ms）
+- 新增配置项 `nearestSymbolsCount`，控制符号校验失败时返回的最近同名符号建议数量（默认 3）
+- 新增配置项 `maxStructLines`，控制文件/符号结构在自动模式下的最大输出行数（默认 200）
+
+### Changed
+
+- `getFileStruct` 支持大文件自动折叠输出，并可结合 `maxDepth` 与 `maxStructLines` 控制结构展开深度
+- 符号校验失败时，相关工具会返回最近的同名符号位置建议，便于模型修正调用位置
+- `getDiagnostics` 会在需要时等待语言服务器生成诊断信息后再返回结果，提升未打开文件场景下的可用性
+
 ## [0.0.3] - 2026-03-05
 
 ### Fix

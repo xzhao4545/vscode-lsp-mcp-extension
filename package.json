@@ -7,7 +7,7 @@
 		"type": "git",
 		"url": "https://github.com/xzhao4545/vscode-lsp-mcp-extension"
 	},
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"icon": "images/extensionIcon.png",
 	"engines": {
 		"vscode": "^1.85.0"

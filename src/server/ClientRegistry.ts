@@ -2,7 +2,7 @@
  * 客户端注册表 - 管理所有连接的 VSCode 窗口
  */
 
-import { normalize, resolve } from "node:path";
+import { isAbsolute, normalize, relative, resolve } from "node:path";
 import type { WebSocket } from "ws";
 import type { Folder, ProjectInfo } from "../shared/types";
 
@@ -107,5 +107,19 @@ export class ClientRegistry {
 			});
 		}
 		return normalized;
+	}
+
+	/**
+	 * 检查目标路径是否等于根路径或位于根路径下
+	 */
+	static containsPath(rootPath: string, targetPath: string): boolean {
+		const normalizedRoot = ClientRegistry.normalizePath(rootPath);
+		const normalizedTarget = ClientRegistry.normalizePath(targetPath);
+		const rel = relative(normalizedRoot, normalizedTarget);
+
+		return (
+			rel === "" ||
+			(!rel.startsWith("..") && rel !== "." && !isAbsolute(rel))
+		);
 	}
 }
