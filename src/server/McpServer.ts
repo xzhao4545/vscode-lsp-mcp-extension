@@ -42,9 +42,9 @@ export class McpServer {
 		);
 
 		for (const [name, tool] of Object.entries(toolSCHEMAS)) {
-			const toolName = `IDE-${name}` as ToolName;
+			const toolName = name as ToolName;
 			server.registerTool(
-				toolName,
+				`IDE-${toolName}`,
 				{
 					description: tool.description,
 					inputSchema: tool.inputSchema,
