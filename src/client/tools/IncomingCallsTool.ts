@@ -21,6 +21,38 @@ interface IncomingCallsResult {
 	suggestedPositions?: SymbolPosition[];
 }
 
+export async function flattenIncomingCalls(
+	calls: readonly vscode.CallHierarchyIncomingCall[],
+	getContextAroundLine: (
+		uri: vscode.Uri,
+		line: number,
+	) => Promise<string[]> = (uri, line) =>
+		ContextHelper.getContextAroundLine(uri, line),
+): Promise<IncomingCall[]> {
+	const incomingCalls = await Promise.all(
+		calls.flatMap((call) => {
+			const callRanges =
+				call.fromRanges.length > 0
+					? call.fromRanges
+					: [call.from.selectionRange ?? call.from.range];
+
+			return callRanges.map(async (callRange) => {
+				const line = callRange.start.line + 1;
+				const context = await getContextAroundLine(call.from.uri, line);
+				return {
+					uri: call.from.uri.fsPath,
+					line,
+					character: callRange.start.character,
+					name: call.from.name,
+					context,
+				};
+			});
+		}),
+	);
+
+	return incomingCalls;
+}
+
 /**
  * IncomingCalls - 查找调用者
  */
@@ -66,21 +98,7 @@ export class IncomingCallsTool extends BaseTool {
 			vscode.CallHierarchyIncomingCall[]
 		>("vscode.provideIncomingCalls", items[0]);
 
-		const result = await Promise.all(
-			(calls || []).map(async (c) => {
-				const context = await ContextHelper.getContextAroundLine(
-					c.from.uri,
-					c.from.range.start.line + 1,
-				);
-				return {
-					uri: c.from.uri.fsPath,
-					line: c.from.range.start.line + 1,
-					character: c.from.range.start.character,
-					name: c.from.name,
-					context,
-				};
-			}),
-		);
+		const result = await flattenIncomingCalls(calls || []);
 
 		return { incomingCalls: result, hasMore: false, total: result.length };
 	}

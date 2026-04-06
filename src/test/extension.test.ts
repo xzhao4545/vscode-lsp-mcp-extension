@@ -5,6 +5,7 @@ import * as path from "node:path";
 // as well as import your extension to test it
 import * as vscode from "vscode";
 import { GetScopeParentTool } from "../client/tools/GetScopeParentTool";
+import { flattenIncomingCalls } from "../client/tools/IncomingCallsTool";
 import {
 	filterWorkspaceSymbols,
 } from "../client/tools/SearchSymbolInWorkspaceTool";
@@ -71,6 +72,55 @@ suite("Extension Test Suite", () => {
 
 		assert.ok(parent);
 		assert.strictEqual(parent?.name, "getChildren");
+	});
+
+	test("flattenIncomingCalls expands each fromRange into a concrete call site", async () => {
+		const uri = vscode.Uri.file(
+			path.resolve("src/client/tools/IncomingCallsTool.ts"),
+		);
+		const incomingCall = {
+			from: {
+				uri,
+				name: "callerFunction",
+				range: new vscode.Range(10, 1, 14, 1),
+				selectionRange: new vscode.Range(10, 7, 10, 21),
+			},
+			fromRanges: [
+				new vscode.Range(11, 4, 11, 18),
+				new vscode.Range(13, 6, 13, 20),
+			],
+		} as unknown as vscode.CallHierarchyIncomingCall;
+
+		const result = await flattenIncomingCalls(
+			[incomingCall],
+			async (_targetUri, line) => [`${line}|call-site`],
+		);
+
+		assert.deepStrictEqual(
+			result.map((call) => ({
+				uri: call.uri,
+				line: call.line,
+				character: call.character,
+				name: call.name,
+				context: call.context,
+			})),
+			[
+				{
+					uri: uri.fsPath,
+					line: 12,
+					character: 4,
+					name: "callerFunction",
+					context: ["12|call-site"],
+				},
+				{
+					uri: uri.fsPath,
+					line: 14,
+					character: 6,
+					name: "callerFunction",
+					context: ["14|call-site"],
+				},
+			],
+		);
 	});
 
 	test("filterWorkspaceSymbols applies query, type and project path filters", () => {

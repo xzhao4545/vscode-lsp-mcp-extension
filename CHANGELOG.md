@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+- 修复 `goToDefinition` 与 `getDefinitionText` 在 `import` / `re-export` 场景下停留在导入语句而非真实定义的问题
+- 修复 `getScopeParent` 在方法体内部返回类级作用域而非最内层方法/构造函数作用域的问题
+- 修复 `searchSymbolInWorkspace` 未按 `projectPath` 限定结果范围、且 `symbolType` 过滤未生效的问题
+- 修复 `goToImplementation` 将抽象基类/当前符号本体错误计入实现结果的问题
+- 修复 `incomingCalls` 返回调用者定义位置而非真实调用位置的问题
+- 补充符号跳转与工作区符号过滤的回归测试，防止上述行为回退
 
 ## [0.0.6] - 2026-04-05
 
