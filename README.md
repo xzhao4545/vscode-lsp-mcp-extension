@@ -8,7 +8,7 @@ As long as VSCode supports parsing a certain language, this extension can provid
 
 ## Features
 
-- 17 MCP tools covering navigation, search, diagnostics, and safe refactoring workflows
+- 15 MCP tools covering navigation, search, diagnostics, and refactoring preview workflows
 - Standalone MCP server architecture that works across multiple VSCode windows and workspaces
 - Pagination and code-context output for high-volume symbol/location queries
 - Symbol validation with nearest-position suggestions when the requested symbol no longer matches the cursor position
@@ -33,8 +33,6 @@ As long as VSCode supports parsing a certain language, this extension can provid
 | `getDefinitionText` | Get definition text |
 | `syncFiles` | Sync file changes |
 | `searchFiles` | Search files |
-| `moveFile` | Move file |
-| `deleteFile` | Delete file |
 | `getScopeParent` | Get parent scope symbol |
 
 ## Requirements
@@ -69,8 +67,6 @@ If you change `ide-lsp-mcp.port`, update the MCP server URL to match the configu
 
 - `listOpenProjects` accepts an optional `projectPath`; when provided, it returns workspaces whose opened project folders are inside that path.
 - Pagination is available on large result sets such as references, implementations, diagnostics, and file search.
-- `moveFile` and `deleteFile` are safe by default and require confirmation unless explicitly allowed by settings.
-
 ### Debug Panel
 
 - Set `ide-lsp-mcp.enableDebug` to `true` to show the MCP debug panel in the debug sidebar.
@@ -96,8 +92,6 @@ If you change `ide-lsp-mcp.port`, update the MCP server URL to match the configu
 | `ide-lsp-mcp.pageSize` | number | 50 | Page size |
 | `ide-lsp-mcp.contextLines` | number | 2 | Number of surrounding context lines to include in location results (`2n+1` total lines) |
 | `ide-lsp-mcp.enableDebug` | boolean | false | Enable debug panel |
-| `ide-lsp-mcp.allowMoveFile` | boolean | false | Allow MCP client to move files without confirmation |
-| `ide-lsp-mcp.allowDeleteFile` | boolean | false | Allow MCP client to delete files without confirmation |
 | `ide-lsp-mcp.enableCors` | boolean | false | Enable CORS for MCP server |
 | `ide-lsp-mcp.diagnosticsTimeout` | number | 5000 | Timeout for waiting diagnostics to be produced |
 | `ide-lsp-mcp.nearestSymbolsCount` | number | 3 | Number of nearest matching symbol suggestions returned on symbol validation failure |
@@ -107,7 +101,7 @@ If you change `ide-lsp-mcp.port`, update the MCP server URL to match the configu
 
 - `getFileStruct` and `getSymbolStruct` support `maxDepth`; negative values use auto mode and respect `ide-lsp-mcp.maxStructLines`.
 - Symbol-aware tools validate `symbolName` and can return suggested positions if the target symbol has moved.
-- `getDiagnostics` can wait for diagnostics on unopened files before returning results, controlled by `ide-lsp-mcp.diagnosticsTimeout`.
+- `getDiagnostics` can temporarily activate a file when a language server only publishes diagnostics for the foreground editor; waiting is controlled by `ide-lsp-mcp.diagnosticsTimeout`.
 
 ## Architecture
 

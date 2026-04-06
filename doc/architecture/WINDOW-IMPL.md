@@ -216,6 +216,4 @@ class FindReferencesTool extends BaseTool {
 | GetDefinitionTextTool | 获取定义文本 | 否 |
 | SyncFilesTool | 同步文件 | 否 |
 | SearchFilesTool | 搜索文件 | 是 |
-| MoveFileTool | 移动文件 | 否 |
-| DeleteFileTool | 删除文件 | 否 |
 | GetScopeParentTool | 查找父级符号 | 否 |

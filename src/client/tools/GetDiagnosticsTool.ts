@@ -4,6 +4,8 @@ import { PaginationHelper } from "../utils/PaginationHelper";
 import type { StringBuilder } from "../utils/StringBuilder";
 import { BaseTool } from "./BaseTool";
 
+const DIAGNOSTICS_POLL_INTERVAL_MS = 100;
+
 interface Diagnostic {
 	message: string;
 	severity: string;
@@ -64,23 +66,58 @@ export class GetDiagnosticsTool extends BaseTool {
 	}
 
 	/**
+	 * 某些语言服务仅在文档出现在可见编辑器后才会发布诊断。
+	 * 对于只在当前活动编辑器发布诊断的语言服务，需要真正激活该文档。
+	 */
+	private async revealDocumentForDiagnostics(
+		uri: vscode.Uri,
+	): Promise<vscode.TextEditor> {
+		const doc = await vscode.workspace.openTextDocument(uri);
+		return vscode.window.showTextDocument(doc, {
+			preview: true,
+			preserveFocus: false,
+			viewColumn: vscode.ViewColumn.Active,
+		});
+	}
+
+	/**
 	 * 等待诊断就绪
 	 * - 如果文件已加载，直接返回（诊断可能已存在）
 	 * - 如果文件未加载，后台打开并等待诊断事件
 	 */
 	private async waitForDiagnostics(uri: vscode.Uri): Promise<void> {
-		// 如果文件已加载，可能已有诊断
-		if (this.isDocumentLoaded(uri)) {
-			// 给一点时间让语言服务器响应（诊断可能还在生成中）
-			await this.waitForDiagnosticsEvent(uri, 1000);
+		if (vscode.languages.getDiagnostics(uri).length > 0) {
 			return;
 		}
 
-		// 后台打开文件
-		await this.openDocumentInBackground(uri);
+		const wasVisible = vscode.window.visibleTextEditors.some(
+			(editor) => editor.document.uri.toString() === uri.toString(),
+		);
 
-		// 等待诊断事件
-		await this.waitForDiagnosticsEvent(uri, Config.getDiagnosticsTimeout());
+		// 如果文件已加载，可能已有诊断
+		if (this.isDocumentLoaded(uri)) {
+			if (
+				await this.waitForDiagnosticsEvent(
+					uri,
+					Math.min(Config.getDiagnosticsTimeout(), 1000),
+				)
+			) {
+				return;
+			}
+		} else {
+			// 后台打开文件
+			await this.openDocumentInBackground(uri);
+
+			// 等待诊断事件
+			if (await this.waitForDiagnosticsEvent(uri, Config.getDiagnosticsTimeout())) {
+				return;
+			}
+		}
+
+		if (!wasVisible) {
+			await this.revealDocumentForDiagnostics(uri);
+			await this.waitForDiagnosticsEvent(uri, Config.getDiagnosticsTimeout());
+		}
 	}
 
 	/**
@@ -91,19 +128,40 @@ export class GetDiagnosticsTool extends BaseTool {
 	private waitForDiagnosticsEvent(
 		uri: vscode.Uri,
 		timeout: number,
-	): Promise<void> {
+	): Promise<boolean> {
+		if (vscode.languages.getDiagnostics(uri).length > 0) {
+			return Promise.resolve(true);
+		}
+
 		return new Promise((resolve) => {
+			let resolved = false;
+			const finish = (ready: boolean) => {
+				if (resolved) {
+					return;
+				}
+				resolved = true;
+				clearInterval(pollHandle);
+				clearTimeout(timeoutHandle);
+				disposable.dispose();
+				resolve(ready);
+			};
+
 			const disposable = vscode.languages.onDidChangeDiagnostics((e) => {
 				if (e.uris.some((u) => u.toString() === uri.toString())) {
-					disposable.dispose();
-					resolve();
+					if (vscode.languages.getDiagnostics(uri).length > 0) {
+						finish(true);
+					}
 				}
 			});
+			const pollHandle = setInterval(() => {
+				if (vscode.languages.getDiagnostics(uri).length > 0) {
+					finish(true);
+				}
+			}, DIAGNOSTICS_POLL_INTERVAL_MS);
 
 			// 超时处理
-			setTimeout(() => {
-				disposable.dispose();
-				resolve();
+			const timeoutHandle = setTimeout(() => {
+				finish(vscode.languages.getDiagnostics(uri).length > 0);
 			}, timeout);
 		});
 	}

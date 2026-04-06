@@ -235,35 +235,6 @@ export const TOOL_SCHEMAS = {
 		}),
 	},
 
-	moveFile: {
-		description:
-			"Move file using IDE refactoring. Updates all references automatically.",
-		inputSchema: z.object({
-			projectPath,
-			sourcePath: z
-				.string()
-				.describe("Source file/directory path (relative to project)"),
-			targetDir: z
-				.string()
-				.describe("Target directory path (relative to project)"),
-		}),
-	},
-
-	deleteFile: {
-		description:
-			"Delete file safely. If usages exist, returns their locations; use force=true to delete anyway and get remaining usages for manual cleanup.",
-		inputSchema: z.object({
-			projectPath,
-			filePath: z
-				.string()
-				.describe("File path to delete (relative to project)"),
-			force: z
-				.boolean()
-				.optional()
-				.describe("Force delete even if usages exist (default: false)"),
-		}),
-	},
-
 	getScopeParent: {
 		description:
 			"Find the enclosing symbol (method, class, function) at a given line and return its definition location with code context.",

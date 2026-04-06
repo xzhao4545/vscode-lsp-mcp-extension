@@ -5,7 +5,6 @@ export { StringBuilder } from "../utils/StringBuilder";
 export { ToolRegistry } from "../utils/ToolRegistry";
 // Base
 export { BaseTool, type ToolResult } from "./BaseTool";
-export { DeleteFileTool } from "./DeleteFileTool";
 export { FindReferencesTool } from "./FindReferencesTool";
 export { GetDefinitionTextTool } from "./GetDefinitionTextTool";
 export { GetDiagnosticsTool } from "./GetDiagnosticsTool";
@@ -17,7 +16,6 @@ export { GoToDefinitionTool } from "./GoToDefinitionTool";
 export { GoToImplementationTool } from "./GoToImplementationTool";
 export { HoverTool } from "./HoverTool";
 export { IncomingCallsTool } from "./IncomingCallsTool";
-export { MoveFileTool } from "./MoveFileTool";
 export { RenameSymbolTool } from "./RenameSymbolTool";
 export { SearchFilesTool } from "./SearchFilesTool";
 export { SearchSymbolInWorkspaceTool } from "./SearchSymbolInWorkspaceTool";

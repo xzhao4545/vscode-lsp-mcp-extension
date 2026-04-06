@@ -67,10 +67,6 @@ suite("MCP Tools Test Suite", function () {
 	test("syncFiles", () => runToolTest(client, "syncFiles"));
 	test("searchFiles", () => runToolTest(client, "searchFiles"));
 	test("getScopeParent", () => runToolTest(client, "getScopeParent"));
-
-	// 文件操作测试（需要特殊处理）
-	test("moveFile", () => runToolWithFileContext(client, "moveFile"));
-	test("deleteFile", () => runToolWithFileContext(client, "deleteFile"));
 });
 
 /**
@@ -167,38 +163,4 @@ async function verifyResults(
 
 	console.log(testResults.join(", "));
 	assert.ok(allSuccess, "Some test cases failed");
-}
-
-/**
- * 文件操作测试（需要备份/恢复测试目录）
- */
-async function runToolWithFileContext(
-	client: McpTestClient,
-	toolName: string,
-): Promise<void> {
-	// 备份测试目录
-	await setupTestFileContext();
-
-	try {
-		await runToolTest(client, toolName);
-	} finally {
-		// 恢复测试目录
-		await cleanupTestFileContext();
-	}
-}
-
-/**
- * 设置文件操作测试环境
- */
-async function setupTestFileContext(): Promise<void> {
-	// TODO: 备份测试目录到临时位置
-	console.log("Setting up test file context...");
-}
-
-/**
- * 清理文件操作测试环境
- */
-async function cleanupTestFileContext(): Promise<void> {
-	// TODO: 从临时位置恢复测试目录
-	console.log("Cleaning up test file context...");
 }

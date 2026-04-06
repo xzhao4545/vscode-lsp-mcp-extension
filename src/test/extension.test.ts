@@ -4,6 +4,8 @@ import * as path from "node:path";
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from "vscode";
+import Config from "../client/Config";
+import { GetDiagnosticsTool } from "../client/tools/GetDiagnosticsTool";
 import { GetScopeParentTool } from "../client/tools/GetScopeParentTool";
 import { flattenIncomingCalls } from "../client/tools/IncomingCallsTool";
 import {
@@ -21,6 +23,7 @@ import {
 	retryUntilReady,
 } from "../client/utils/SymbolProviderWarmup";
 import { ClientRegistry } from "../server/ClientRegistry";
+import { toServerToolName } from "./McpTestClient";
 
 // import * as myExtension from '../../extension';
 
@@ -159,6 +162,126 @@ suite("Extension Test Suite", () => {
 		);
 
 		assert.strictEqual(formatted, "*Invalid file name regex: [*");
+	});
+
+	test("McpTestClient prefixes plain tool names with IDE-", () => {
+		assert.strictEqual(toServerToolName("getDiagnostics"), "IDE-getDiagnostics");
+		assert.strictEqual(
+			toServerToolName("IDE-getScopeParent"),
+			"IDE-getScopeParent",
+		);
+	});
+
+	test("GetDiagnosticsTool waits through empty change events and foreground-reveals the document when needed", async () => {
+		const tool = new GetDiagnosticsTool();
+		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
+		const filePath = "src/test/fixtures/diag-error.ts";
+		const targetUri = vscode.Uri.file(path.join(projectPath, filePath));
+		const diagnostic = new vscode.Diagnostic(
+			new vscode.Range(0, 13, 0, 16),
+			"Type 'number' is not assignable to type 'string'.",
+			vscode.DiagnosticSeverity.Error,
+		);
+		const originalOpenTextDocument = vscode.workspace.openTextDocument;
+		const originalShowTextDocument = vscode.window.showTextDocument;
+		const originalGetDiagnostics = vscode.languages.getDiagnostics;
+		const originalOnDidChangeDiagnostics = vscode.languages.onDidChangeDiagnostics;
+		const originalGetDiagnosticsTimeout = Config.getDiagnosticsTimeout;
+		const onDidChangeDiagnosticsDescriptor = Object.getOwnPropertyDescriptor(
+			vscode.languages,
+			"onDidChangeDiagnostics",
+		);
+		const visibleEditorsDescriptor = Object.getOwnPropertyDescriptor(
+			vscode.window,
+			"visibleTextEditors",
+		);
+		const listeners = new Set<(e: vscode.DiagnosticChangeEvent) => void>();
+		let diagnostics: vscode.Diagnostic[] = [];
+		let revealOptions: vscode.TextDocumentShowOptions | undefined;
+
+		try {
+			vscode.workspace.openTextDocument = (async () =>
+				({
+					uri: targetUri,
+					getText: () => "",
+				}) as vscode.TextDocument) as unknown as typeof vscode.workspace.openTextDocument;
+			vscode.window.showTextDocument = (async (_document, options) => {
+				if (options && typeof options === "object") {
+					revealOptions = options;
+				}
+				setTimeout(() => {
+					for (const listener of listeners) {
+						listener({ uris: [targetUri] });
+					}
+				}, 0);
+				setTimeout(() => {
+					diagnostics = [diagnostic];
+					for (const listener of listeners) {
+						listener({ uris: [targetUri] });
+					}
+				}, 10);
+				return {
+					document: {
+						uri: targetUri,
+					},
+				} as vscode.TextEditor;
+			}) as typeof vscode.window.showTextDocument;
+			vscode.languages.getDiagnostics = (((uri: vscode.Uri) =>
+				uri.toString() === targetUri.toString() ? diagnostics : []) as (
+				typeof vscode.languages.getDiagnostics
+			));
+			Object.defineProperty(vscode.languages, "onDidChangeDiagnostics", {
+				configurable: true,
+				value: ((listener: (e: vscode.DiagnosticChangeEvent) => void) => {
+					listeners.add(listener);
+					return {
+						dispose() {
+							listeners.delete(listener);
+						},
+					};
+				}) as typeof vscode.languages.onDidChangeDiagnostics,
+			});
+			(Config.getDiagnosticsTimeout as unknown as () => number) = () => 50;
+			Object.defineProperty(vscode.window, "visibleTextEditors", {
+				configurable: true,
+				value: [],
+			});
+
+			const result = await tool.execute({
+				projectPath,
+				filePath,
+				severity: "Error",
+			});
+
+			assert.strictEqual(revealOptions?.preserveFocus, false);
+			assert.strictEqual(result.total, 1);
+			assert.strictEqual(result.diagnostics[0].line, 1);
+		} finally {
+			vscode.workspace.openTextDocument = originalOpenTextDocument;
+			vscode.window.showTextDocument = originalShowTextDocument;
+			vscode.languages.getDiagnostics = originalGetDiagnostics;
+			(Config.getDiagnosticsTimeout as unknown as () => number) =
+				originalGetDiagnosticsTimeout.bind(Config);
+			if (onDidChangeDiagnosticsDescriptor) {
+				Object.defineProperty(
+					vscode.languages,
+					"onDidChangeDiagnostics",
+					onDidChangeDiagnosticsDescriptor,
+				);
+			} else {
+				Object.defineProperty(vscode.languages, "onDidChangeDiagnostics", {
+					configurable: true,
+					value: originalOnDidChangeDiagnostics,
+				});
+			}
+			if (visibleEditorsDescriptor) {
+				Object.defineProperty(
+					vscode.window,
+					"visibleTextEditors",
+					visibleEditorsDescriptor,
+				);
+			}
+		}
 	});
 
 	test("retryUntilReady retries until the provider becomes ready", async () => {

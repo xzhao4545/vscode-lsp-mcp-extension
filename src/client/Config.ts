@@ -31,14 +31,6 @@ class Config {
 		return this.vsConfig.get<number>("contextLines", DEFAULT_CONTEXT_LINES);
 	}
 
-	getAllowMoveFile(): boolean {
-		return this.vsConfig.get<boolean>("allowMoveFile", false);
-	}
-
-	getAllowDeleteFile(): boolean {
-		return this.vsConfig.get<boolean>("allowDeleteFile", false);
-	}
-
 	getEnableCors(): boolean {
 		return this.vsConfig.get<boolean>("enableCors", false);
 	}

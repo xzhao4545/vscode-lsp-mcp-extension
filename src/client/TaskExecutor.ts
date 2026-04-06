@@ -4,7 +4,6 @@
 
 import type { TaskMessage } from "../shared/protocol";
 import {
-	DeleteFileTool,
 	FindReferencesTool,
 	GetDefinitionTextTool,
 	GetDiagnosticsTool,
@@ -15,7 +14,6 @@ import {
 	GoToImplementationTool,
 	HoverTool,
 	IncomingCallsTool,
-	MoveFileTool,
 	RenameSymbolTool,
 	SearchFilesTool,
 	SearchSymbolInWorkspaceTool,
@@ -49,8 +47,6 @@ export class TaskExecutor {
 			new GetDefinitionTextTool(),
 			new SyncFilesTool(),
 			new SearchFilesTool(),
-			new MoveFileTool(),
-			new DeleteFileTool(),
 			new GetScopeParentTool(),
 		]);
 	}
