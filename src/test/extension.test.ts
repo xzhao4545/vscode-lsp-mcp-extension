@@ -7,9 +7,19 @@ import * as vscode from "vscode";
 import { GetScopeParentTool } from "../client/tools/GetScopeParentTool";
 import { flattenIncomingCalls } from "../client/tools/IncomingCallsTool";
 import {
+	buildSearchFilesGlob,
+	buildSearchFilesRegex,
+	SearchFilesTool,
+} from "../client/tools/SearchFilesTool";
+import {
 	filterWorkspaceSymbols,
+	retryWorkspaceQuery,
 } from "../client/tools/SearchSymbolInWorkspaceTool";
 import { LocationHelper } from "../client/utils/LocationHelper";
+import {
+	ensureWorkspaceSymbolProviderReady,
+	retryUntilReady,
+} from "../client/utils/SymbolProviderWarmup";
 import { ClientRegistry } from "../server/ClientRegistry";
 
 // import * as myExtension from '../../extension';
@@ -123,6 +133,129 @@ suite("Extension Test Suite", () => {
 		);
 	});
 
+	test("buildSearchFilesGlob respects recursive flag", () => {
+		assert.strictEqual(buildSearchFilesGlob(), "**/*");
+		assert.strictEqual(buildSearchFilesGlob(false), "*");
+	});
+
+	test("buildSearchFilesRegex reports invalid patterns without leaking raw syntax errors", () => {
+		assert.ok(buildSearchFilesRegex(".*\\.ts$").test("extension.ts"));
+		assert.throws(
+			() => buildSearchFilesRegex("["),
+			/Invalid file name regex: \[/,
+		);
+	});
+
+	test("SearchFilesTool.format renders regex validation errors as user-facing text", () => {
+		const tool = new SearchFilesTool();
+		const formatted = tool.format(
+			{
+				files: [],
+				hasMore: false,
+				total: 0,
+				error: "Invalid file name regex: [",
+			},
+			{},
+		);
+
+		assert.strictEqual(formatted, "*Invalid file name regex: [*");
+	});
+
+	test("retryUntilReady retries until the provider becomes ready", async () => {
+		let attempts = 0;
+		const result = await retryUntilReady(
+			async () => {
+				attempts++;
+				return attempts >= 3 ? ["ready"] : [];
+			},
+			(value) => value.length > 0,
+			4,
+			0,
+		);
+
+		assert.deepStrictEqual(result, ["ready"]);
+		assert.strictEqual(attempts, 3);
+	});
+
+	test("retryWorkspaceQuery retries a cold query until symbols appear", async () => {
+		let attempts = 0;
+		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
+
+		const result = await retryWorkspaceQuery(
+			async () => {
+				attempts++;
+				return attempts >= 3
+					? [
+							{
+								name: "BaseTool",
+								kind: vscode.SymbolKind.Class,
+								location: new vscode.Location(
+									vscode.Uri.file(
+										path.join(projectPath, "src/client/tools/BaseTool.ts"),
+									),
+									new vscode.Range(16, 0, 16, 1),
+								),
+								containerName: "",
+							} as vscode.SymbolInformation,
+						]
+					: [];
+			},
+			2,
+			0,
+		);
+
+		assert.strictEqual(attempts, 3);
+		assert.deepStrictEqual(result.map((symbol) => symbol.name), ["BaseTool"]);
+	});
+
+	test("retryWorkspaceQuery stays bounded when the symbol does not exist", async () => {
+		let attempts = 0;
+		const result = await retryWorkspaceQuery(
+			async () => {
+				attempts++;
+				return [];
+			},
+			2,
+			0,
+		);
+
+		assert.strictEqual(attempts, 3);
+		assert.deepStrictEqual(result, []);
+	});
+
+	test("ensureWorkspaceSymbolProviderReady returns quickly when the provider is already warm", async () => {
+		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
+		const originalExecuteCommand = vscode.commands.executeCommand;
+		let commandCalls = 0;
+
+		try {
+			vscode.commands.executeCommand = (async (command: string, query: string) => {
+				if (command === "vscode.executeWorkspaceSymbolProvider" && query === "") {
+					commandCalls++;
+					return [
+						{
+							name: "BaseTool",
+							kind: vscode.SymbolKind.Class,
+							location: new vscode.Location(
+								vscode.Uri.file(path.join(projectPath, "src/client/tools/BaseTool.ts")),
+								new vscode.Range(16, 0, 16, 1),
+							),
+							containerName: "",
+						},
+					];
+				}
+
+				return [];
+			}) as typeof vscode.commands.executeCommand;
+
+			const ready = await ensureWorkspaceSymbolProviderReady(projectPath);
+			assert.strictEqual(ready, true);
+			assert.strictEqual(commandCalls, 1);
+		} finally {
+			vscode.commands.executeCommand = originalExecuteCommand;
+		}
+	});
+
 	test("filterWorkspaceSymbols applies query, type and project path filters", () => {
 		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
 		const symbols: vscode.SymbolInformation[] = [
@@ -186,6 +319,53 @@ suite("Extension Test Suite", () => {
 		assert.deepStrictEqual(
 			fieldMatches.map((symbol) => symbol.name),
 			["debugPanelProvider"],
+		);
+	});
+
+	test("filterWorkspaceSymbols treats class filter as type declarations", () => {
+		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
+		const symbols: vscode.SymbolInformation[] = [
+			{
+				name: "DebugPanelProvider",
+				kind: vscode.SymbolKind.Class,
+				location: new vscode.Location(
+					vscode.Uri.file(
+						path.join(projectPath, "src/client/debug/DebugPanelProvider.ts"),
+					),
+					new vscode.Range(48, 0, 48, 1),
+				),
+				containerName: "",
+			} as vscode.SymbolInformation,
+			{
+				name: "DebugPanelContract",
+				kind: vscode.SymbolKind.Interface,
+				location: new vscode.Location(
+					vscode.Uri.file(path.join(projectPath, "src/shared/types.ts")),
+					new vscode.Range(0, 0, 0, 1),
+				),
+				containerName: "",
+			} as vscode.SymbolInformation,
+			{
+				name: "debugPanelProvider",
+				kind: vscode.SymbolKind.Variable,
+				location: new vscode.Location(
+					vscode.Uri.file(path.join(projectPath, "src/extension.ts")),
+					new vscode.Range(23, 0, 23, 1),
+				),
+				containerName: "",
+			} as vscode.SymbolInformation,
+		];
+
+		const classMatches = filterWorkspaceSymbols(
+			symbols,
+			projectPath,
+			"DebugPanel",
+			"class",
+		);
+
+		assert.deepStrictEqual(
+			classMatches.map((symbol) => symbol.name),
+			["DebugPanelProvider", "DebugPanelContract"],
 		);
 	});
 });

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ContextHelper } from "../utils/ContextHelper";
+import { getDocumentSymbolsWithWarmup } from "../utils/SymbolProviderWarmup";
 import { StringBuilder } from "../utils/StringBuilder";
 import { BaseTool } from "./BaseTool";
 
@@ -25,9 +26,7 @@ export class GetScopeParentTool extends BaseTool {
 			args.filePath as string,
 		);
 		const line = (args.line as number) - 1;
-		const symbols = await vscode.commands.executeCommand<
-			vscode.DocumentSymbol[]
-		>("vscode.executeDocumentSymbolProvider", uri);
+		const symbols = await getDocumentSymbolsWithWarmup(uri);
 		if (!symbols || symbols.length === 0) {
 			return { found: false };
 		}

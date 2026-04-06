@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import Config from "../Config";
+import { getDocumentSymbolsWithWarmup } from "./SymbolProviderWarmup";
 
 export interface SymbolPosition {
 	line: number;
@@ -59,10 +60,7 @@ async function findNearestSymbols(
 	count?: number,
 ): Promise<SymbolPosition[]> {
 	const maxCount = count ?? Config.getNearestSymbolsCount();
-	const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-		"vscode.executeDocumentSymbolProvider",
-		uri,
-	);
+	const symbols = await getDocumentSymbolsWithWarmup(uri);
 
 	if (!symbols || symbols.length === 0) {
 		return [];

@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { ensureWorkspaceSymbolProviderReady } from "../utils/SymbolProviderWarmup";
 import { StringBuilder } from "../utils/StringBuilder";
 import { BaseTool } from "./BaseTool";
 
@@ -22,6 +23,7 @@ export class SyncFilesTool extends BaseTool {
 				await vscode.workspace.fs.stat(uri);
 			}
 		}
+		await ensureWorkspaceSymbolProviderReady(projectPath, paths);
 		return { success: true, message: "Files synced" };
 	}
 

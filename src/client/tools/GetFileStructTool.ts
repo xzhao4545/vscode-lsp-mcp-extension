@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import Config from "../Config";
+import { getDocumentSymbolsWithWarmup } from "../utils/SymbolProviderWarmup";
 import { StringBuilder } from "../utils/StringBuilder";
 import { BaseTool } from "./BaseTool";
 
@@ -34,9 +35,7 @@ export class GetFileStructTool extends BaseTool {
 		const maxDepth = (args.maxDepth as number) ?? -1; // 默认 auto (-1)
 		const maxLines = Config.getMaxStructLines();
 
-		const symbols = await vscode.commands.executeCommand<
-			vscode.DocumentSymbol[]
-		>("vscode.executeDocumentSymbolProvider", uri);
+		const symbols = await getDocumentSymbolsWithWarmup(uri);
 
 		if (!symbols || symbols.length === 0) {
 			return { symbols: [], hasCollapsed: false };

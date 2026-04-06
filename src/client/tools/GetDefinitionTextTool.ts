@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { ContextHelper } from "../utils/ContextHelper";
 import { LocationHelper } from "../utils/LocationHelper";
+import { getDocumentSymbolsWithWarmup } from "../utils/SymbolProviderWarmup";
 import { StringBuilder } from "../utils/StringBuilder";
 import { type SymbolPosition, SymbolValidator } from "../utils/SymbolValidator";
 import { BaseTool } from "./BaseTool";
@@ -123,9 +124,7 @@ export class GetDefinitionTextTool extends BaseTool {
 		uri: vscode.Uri,
 		targetLine: number,
 	): Promise<vscode.Range | null> {
-		const symbols = await vscode.commands.executeCommand<
-			vscode.DocumentSymbol[]
-		>("vscode.executeDocumentSymbolProvider", uri);
+		const symbols = await getDocumentSymbolsWithWarmup(uri);
 		if (!symbols || symbols.length === 0) {
 			return null;
 		}

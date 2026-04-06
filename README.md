@@ -4,7 +4,7 @@ A VSCode extension that exposes IDE code intelligence capabilities through the M
 
 As long as VSCode supports parsing a certain language, this extension can provide LSP services for that language to AI models.
 
-> **中文**: [中文版本](./readme/README.zh-CN.md)
+> **中文**: [中文版本](https://github.com/xzhao4545/vscode-lsp-mcp-extension/blob/main/readme/README.zh-CN.md)
 
 ## Features
 

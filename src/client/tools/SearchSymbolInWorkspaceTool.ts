@@ -2,6 +2,11 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { ContextHelper } from "../utils/ContextHelper";
 import { PaginationHelper } from "../utils/PaginationHelper";
+import {
+	ensureWorkspaceSymbolProviderReady,
+	retryUntilReady,
+	warmWorkspaceSymbolProvider,
+} from "../utils/SymbolProviderWarmup";
 import type { StringBuilder } from "../utils/StringBuilder";
 import { BaseTool } from "./BaseTool";
 
@@ -21,6 +26,9 @@ interface SearchSymbolResult {
 }
 
 type SymbolTypeFilter = "all" | "class" | "method" | "field";
+const WORKSPACE_QUERY_RETRY_COUNT = 2;
+const WORKSPACE_QUERY_RETRY_DELAY_MS = 75;
+const forcedWorkspaceWarmupProjects = new Set<string>();
 
 const SEARCHABLE_SYMBOL_KINDS = new Set<vscode.SymbolKind>([
 	vscode.SymbolKind.Class,
@@ -119,6 +127,14 @@ function matchesProjectPath(projectRoot: string, candidatePath: string): boolean
 	);
 }
 
+export async function retryWorkspaceQuery(
+	load: () => Promise<vscode.SymbolInformation[]>,
+	retries: number = WORKSPACE_QUERY_RETRY_COUNT,
+	delayMs: number = WORKSPACE_QUERY_RETRY_DELAY_MS,
+): Promise<vscode.SymbolInformation[]> {
+	return retryUntilReady(load, (symbols) => symbols.length > 0, retries, delayMs);
+}
+
 /**
  * SearchSymbolInWorkspace - 工作区符号搜索
  */
@@ -128,27 +144,29 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
 	async execute(args: Record<string, unknown>): Promise<SearchSymbolResult> {
 		const query = args.query as string;
 		const projectPath = args.projectPath as string;
+		const normalizedProjectPath = path.resolve(projectPath);
 		const symbolType =
 			((args.symbolType as SymbolTypeFilter | undefined) ?? "all");
-		let symbols: vscode.SymbolInformation[] = [];
+		const trimmedQuery = query.trim();
 
-		for (const providerQuery of buildWorkspaceSymbolQueries(query)) {
-			const rawSymbols =
-				(await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
-					"vscode.executeWorkspaceSymbolProvider",
-					providerQuery,
-				)) || [];
+		if (trimmedQuery) {
+			await ensureWorkspaceSymbolProviderReady(projectPath);
+		}
 
-			symbols = filterWorkspaceSymbols(
-				rawSymbols,
-				projectPath,
-				query,
-				symbolType,
-			);
+		let symbols = trimmedQuery
+			? await retryWorkspaceQuery(() =>
+					this.queryWorkspaceSymbols(query, projectPath, symbolType),
+				)
+			: await this.queryWorkspaceSymbols(query, projectPath, symbolType);
 
-			if (symbols.length > 0 || providerQuery === "") {
-				break;
-			}
+		if (
+			trimmedQuery &&
+			symbols.length === 0 &&
+			!forcedWorkspaceWarmupProjects.has(normalizedProjectPath)
+		) {
+			forcedWorkspaceWarmupProjects.add(normalizedProjectPath);
+			await warmWorkspaceSymbolProvider(projectPath);
+			symbols = await this.queryWorkspaceSymbols(query, projectPath, symbolType);
 		}
 
 		const result = await Promise.all(
@@ -170,6 +188,33 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
 		);
 
 		return { symbols: result, hasMore: false, total: result.length };
+	}
+
+	private async queryWorkspaceSymbols(
+		query: string,
+		projectPath: string,
+		symbolType: SymbolTypeFilter,
+	): Promise<vscode.SymbolInformation[]> {
+		for (const providerQuery of buildWorkspaceSymbolQueries(query)) {
+			const rawSymbols =
+				(await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+					"vscode.executeWorkspaceSymbolProvider",
+					providerQuery,
+				)) || [];
+
+			const symbols = filterWorkspaceSymbols(
+				rawSymbols,
+				projectPath,
+				query,
+				symbolType,
+			);
+
+			if (symbols.length > 0 || providerQuery === "") {
+				return symbols;
+			}
+		}
+
+		return [];
 	}
 
 	format(result: SearchSymbolResult, args: Record<string, unknown>): string {

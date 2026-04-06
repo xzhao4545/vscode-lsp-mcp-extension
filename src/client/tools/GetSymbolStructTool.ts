@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import Config from "../Config";
+import { getDocumentSymbolsWithWarmup } from "../utils/SymbolProviderWarmup";
 import { StringBuilder } from "../utils/StringBuilder";
 import { type SymbolPosition, SymbolValidator } from "../utils/SymbolValidator";
 import { BaseTool } from "./BaseTool";
@@ -58,9 +59,7 @@ export class GetSymbolStructTool extends BaseTool {
 		}
 
 		// 获取文件中的所有符号
-		const symbols = await vscode.commands.executeCommand<
-			vscode.DocumentSymbol[]
-		>("vscode.executeDocumentSymbolProvider", uri);
+		const symbols = await getDocumentSymbolsWithWarmup(uri);
 
 		if (!symbols || symbols.length === 0) {
 			return { symbol: undefined, hasCollapsed: false };

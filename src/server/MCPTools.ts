@@ -117,7 +117,9 @@ export const TOOL_SCHEMAS = {
 	},
 
 	searchSymbolInWorkspace: {
-		description: "Search for symbols by name across workspace.",
+		description:
+			"Search for symbols by name across workspace.\n" +
+			"Note: the first call may return no symbols. Try the same query a second time.",
 		inputSchema: z.object({
 			projectPath,
 			query: z
@@ -126,7 +128,9 @@ export const TOOL_SCHEMAS = {
 			symbolType: z
 				.enum(["class", "method", "field", "all"])
 				.optional()
-				.describe("Symbol type filter: 'class', 'method', 'field', or 'all'"),
+				.describe(
+					"Symbol type filter: 'class' (classes/interfaces/enums/structs), 'method', 'field', or 'all'",
+				),
 			page,
 		}),
 	},
