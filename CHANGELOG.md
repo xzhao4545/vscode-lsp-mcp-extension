@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-04-06
+
+- 修复 `searchSymbolInWorkspace` 首次查询偶发空结果的问题：工具现在会自动预热并重试工作区符号索引
+- 更新 `listOpenProjects` 文档与工具描述，明确传入 `projectPath` 时返回 `targetWorkspace`
+- 更新 `incomingCalls` 文档与工具描述，明确结果依赖 IDE Call Hierarchy 支持，部分符号可能返回空结果
+- 补充 `searchSymbolInWorkspace` 预热重试的回归测试
+
 ## [0.1.0] - 2026-04-06
 
 - 移除 `moveFile` 与 `deleteFile` 工具，以及对应的配置项、测试与文档说明

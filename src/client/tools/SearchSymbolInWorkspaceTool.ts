@@ -28,7 +28,6 @@ interface SearchSymbolResult {
 type SymbolTypeFilter = "all" | "class" | "method" | "field";
 const WORKSPACE_QUERY_RETRY_COUNT = 2;
 const WORKSPACE_QUERY_RETRY_DELAY_MS = 75;
-const forcedWorkspaceWarmupProjects = new Set<string>();
 
 const SEARCHABLE_SYMBOL_KINDS = new Set<vscode.SymbolKind>([
 	vscode.SymbolKind.Class,
@@ -135,6 +134,24 @@ export async function retryWorkspaceQuery(
 	return retryUntilReady(load, (symbols) => symbols.length > 0, retries, delayMs);
 }
 
+export async function resolveWorkspaceQuery(
+	query: string,
+	load: () => Promise<vscode.SymbolInformation[]>,
+	warmup: () => Promise<void>,
+): Promise<vscode.SymbolInformation[]> {
+	if (!query.trim()) {
+		return load();
+	}
+
+	let symbols = await retryWorkspaceQuery(load);
+	if (symbols.length > 0) {
+		return symbols;
+	}
+
+	await warmup();
+	return retryWorkspaceQuery(load);
+}
+
 /**
  * SearchSymbolInWorkspace - 工作区符号搜索
  */
@@ -144,7 +161,6 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
 	async execute(args: Record<string, unknown>): Promise<SearchSymbolResult> {
 		const query = args.query as string;
 		const projectPath = args.projectPath as string;
-		const normalizedProjectPath = path.resolve(projectPath);
 		const symbolType =
 			((args.symbolType as SymbolTypeFilter | undefined) ?? "all");
 		const trimmedQuery = query.trim();
@@ -153,21 +169,11 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
 			await ensureWorkspaceSymbolProviderReady(projectPath);
 		}
 
-		let symbols = trimmedQuery
-			? await retryWorkspaceQuery(() =>
-					this.queryWorkspaceSymbols(query, projectPath, symbolType),
-				)
-			: await this.queryWorkspaceSymbols(query, projectPath, symbolType);
-
-		if (
-			trimmedQuery &&
-			symbols.length === 0 &&
-			!forcedWorkspaceWarmupProjects.has(normalizedProjectPath)
-		) {
-			forcedWorkspaceWarmupProjects.add(normalizedProjectPath);
-			await warmWorkspaceSymbolProvider(projectPath);
-			symbols = await this.queryWorkspaceSymbols(query, projectPath, symbolType);
-		}
+		const symbols = await resolveWorkspaceQuery(
+			query,
+			() => this.queryWorkspaceSymbols(query, projectPath, symbolType),
+			() => warmWorkspaceSymbolProvider(projectPath),
+		);
 
 		const result = await Promise.all(
 			symbols.map(async (s) => {

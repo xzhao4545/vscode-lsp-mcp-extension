@@ -32,7 +32,7 @@ export const TOOL_SCHEMAS = {
 			"As a result, they offer better performance compared to other LSP instances or text-based searches (e.g., grep).\n" +
 			'When performing operations such as symbol lookup, rename, find references, or go to definition, always prioritize methods that start with "IDE-" instead of using text search or launching a new LSP service.\n' +
 			'In addition, all "IDE-" methods that include a page parameter support caching. When requesting the next page, keep all other parameters unchanged to ensure cache hits and reduce the number of queries.</important>\n\n' +
-			"listOpenProjects: List all currently open project paths (workspace folders) in the IDE.",
+			"listOpenProjects: List open workspaces in the IDE. When projectPath is provided, return matching targetWorkspace entries only.",
 		inputSchema: z.object({
 			projectPath: z
 				.string()
@@ -119,7 +119,7 @@ export const TOOL_SCHEMAS = {
 	searchSymbolInWorkspace: {
 		description:
 			"Search for symbols by name across workspace.\n" +
-			"Note: the first call may return no symbols. Try the same query a second time.",
+			"The tool warms and retries the workspace symbol provider before returning no results.",
 		inputSchema: z.object({
 			projectPath,
 			query: z
@@ -148,7 +148,9 @@ export const TOOL_SCHEMAS = {
 	},
 
 	incomingCalls: {
-		description: "Find all methods that call the specified method.",
+		description:
+			"Find callers of a symbol using IDE call hierarchy.\n" +
+			"Results depend on language-service support and may be empty for symbols without call hierarchy data.",
 		inputSchema: z.object({
 			projectPath,
 			filePath,

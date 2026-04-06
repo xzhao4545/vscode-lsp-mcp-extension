@@ -15,6 +15,7 @@ import {
 } from "../client/tools/SearchFilesTool";
 import {
 	filterWorkspaceSymbols,
+	resolveWorkspaceQuery,
 	retryWorkspaceQuery,
 } from "../client/tools/SearchSymbolInWorkspaceTool";
 import { LocationHelper } from "../client/utils/LocationHelper";
@@ -344,6 +345,41 @@ suite("Extension Test Suite", () => {
 
 		assert.strictEqual(attempts, 3);
 		assert.deepStrictEqual(result, []);
+	});
+
+	test("resolveWorkspaceQuery warms up and retries once more after an empty first pass", async () => {
+		let warmed = false;
+		let loadCalls = 0;
+		let warmupCalls = 0;
+		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
+
+		const result = await resolveWorkspaceQuery(
+			"BaseTool",
+			async () => {
+				loadCalls++;
+				return warmed
+					? [
+							{
+								name: "BaseTool",
+								kind: vscode.SymbolKind.Class,
+								location: new vscode.Location(
+									vscode.Uri.file(path.join(projectPath, "src/client/tools/BaseTool.ts")),
+									new vscode.Range(16, 0, 16, 1),
+								),
+								containerName: "",
+							} as vscode.SymbolInformation,
+						]
+					: [];
+			},
+			async () => {
+				warmupCalls++;
+				warmed = true;
+			},
+		);
+
+		assert.strictEqual(warmupCalls, 1);
+		assert.strictEqual(loadCalls, 4);
+		assert.deepStrictEqual(result.map((symbol) => symbol.name), ["BaseTool"]);
 	});
 
 	test("ensureWorkspaceSymbolProviderReady returns quickly when the provider is already warm", async () => {
