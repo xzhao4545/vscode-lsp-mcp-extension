@@ -60,7 +60,11 @@ export class GoToImplementationTool extends BaseTool {
 			vscode.Location | vscode.Location[] | vscode.LocationLink[]
 		>("vscode.executeImplementationProvider", uri, position);
 
-		const locations = LocationHelper.normalize(rawLocations);
+		const locations = LocationHelper.normalize(rawLocations).filter(
+			(location) =>
+				location.uri.toString() !== uri.toString() ||
+				!location.range.contains(position),
+		);
 
 		const implementations = await Promise.all(
 			locations.map(async (loc) => {

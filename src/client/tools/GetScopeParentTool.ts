@@ -52,15 +52,12 @@ export class GetScopeParentTool extends BaseTool {
 	static findParent = (
 		syms: vscode.DocumentSymbol[],
 		targetLine: number,
-		targetCharacter: number = 0,
 	): vscode.DocumentSymbol | null => {
 		for (const s of syms) {
 			if (
 				GetScopeParentTool.hasScope(s) &&
 				s.range.start.line <= targetLine &&
-				s.range.end.line >= targetLine &&
-				s.range.start.character <= targetCharacter &&
-				s.range.end.character >= targetCharacter
+				s.range.end.line >= targetLine
 			) {
 				const child = GetScopeParentTool.findParent(
 					s.children || [],

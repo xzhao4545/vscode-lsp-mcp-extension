@@ -51,11 +51,11 @@ export class GetDefinitionTextTool extends BaseTool {
 			};
 		}
 
-		const rawLocations = await vscode.commands.executeCommand<
-			vscode.Location | vscode.Location[] | vscode.LocationLink[]
-		>("vscode.executeDefinitionProvider", uri, position);
-
-		const locations = LocationHelper.normalize(rawLocations);
+		const locations = await LocationHelper.resolveDefinitionLocations(
+			uri,
+			position,
+			symbolName,
+		);
 
 		if (locations.length === 0) {
 			return { definition: [] };
