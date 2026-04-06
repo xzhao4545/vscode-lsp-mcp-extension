@@ -17,14 +17,33 @@ export class SyncFilesTool extends BaseTool {
 	async execute(args: Record<string, unknown>): Promise<SyncFilesResult> {
 		const projectPath = args.projectPath as string;
 		const paths = args.paths as string[] | undefined;
-		if (paths && paths.length > 0) {
-			for (const p of paths) {
-				const uri = this.resolveUri(projectPath, p);
-				await vscode.workspace.fs.stat(uri);
+		try {
+			let skippedMissingPaths = false;
+			if (paths && paths.length > 0) {
+				for (const p of paths) {
+					const uri = this.resolveUri(projectPath, p);
+					try {
+						await vscode.workspace.fs.stat(uri);
+					} catch (error) {
+						if (error instanceof vscode.FileSystemError) {
+							skippedMissingPaths = true;
+							continue;
+						}
+						throw error;
+					}
+				}
 			}
+
+			await ensureWorkspaceSymbolProviderReady(projectPath, paths);
+			return {
+				success: true,
+				message: skippedMissingPaths
+					? "Files synced; skipped missing paths"
+					: "Files synced",
+			};
+		} catch {
+			return { success: false, message: "Failed to sync files" };
 		}
-		await ensureWorkspaceSymbolProviderReady(projectPath, paths);
-		return { success: true, message: "Files synced" };
 	}
 
 	format(result: SyncFilesResult): string {

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-04-06
+
+- 移除 `moveFile` 与 `deleteFile` 工具，以及对应的配置项、测试与文档说明
+- 修复 `getDiagnostics` 在需要前台激活文件或经历空诊断事件时拿不到真实诊断结果的问题
+- 调整 `syncFiles` 的异常处理：缺失路径仅返回简短提示，不再暴露底层堆栈
 - 修复 `goToDefinition` 与 `getDefinitionText` 在 `import` / `re-export` 场景下停留在导入语句而非真实定义的问题
 - 修复 `getScopeParent` 在方法体内部返回类级作用域而非最内层方法/构造函数作用域的问题
 - 修复 `searchSymbolInWorkspace` 未按 `projectPath` 限定结果范围、且 `symbolType` 过滤未生效的问题
