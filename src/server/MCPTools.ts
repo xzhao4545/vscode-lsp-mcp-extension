@@ -118,8 +118,7 @@ export const TOOL_SCHEMAS = {
 
 	searchSymbolInWorkspace: {
 		description:
-			"Search for symbols by name across workspace.\n" +
-			"The tool warms and retries the workspace symbol provider before returning no results.",
+			"Search for symbols by name across workspace.",
 		inputSchema: z.object({
 			projectPath,
 			query: z
@@ -148,9 +147,7 @@ export const TOOL_SCHEMAS = {
 	},
 
 	incomingCalls: {
-		description:
-			"Find callers of a symbol using IDE call hierarchy.\n" +
-			"Results depend on language-service support and may be empty for symbols without call hierarchy data.",
+		description: "Find callers of a symbol using IDE call hierarchy.",
 		inputSchema: z.object({
 			projectPath,
 			filePath,
