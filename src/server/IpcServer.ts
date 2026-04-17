@@ -4,6 +4,7 @@
  */
 
 import * as crypto from "node:crypto";
+import * as fs from "node:fs";
 import * as net from "node:net";
 import {
 	createMessageConnection,
@@ -41,6 +42,14 @@ export class IpcServer {
 	 * // CN: 在 IPC 路径上监听
 	 */
 	listen(pipePath: string, callback?: () => void): void {
+		try {
+			if (!pipePath.startsWith("\\\\.\\pipe\\") && fs.existsSync(pipePath)) {
+				fs.unlinkSync(pipePath);
+			}
+		} catch (err) {
+			console.error(`[IPC Server] Failed to unlink stale socket:`, err);
+		}
+
 		this.server.listen(pipePath, () => {
 			console.log(`[IPC Server] Listening on ${pipePath}`);
 			if (callback) {
