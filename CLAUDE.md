@@ -63,11 +63,11 @@ l10n/
 
 ### Protocol Pattern (src/shared/protocol.ts)
 
-Communication uses a strictly typed message structure. When adding a new type of communication (e.g., "Progress Update"):
+Communication uses `vscode-jsonrpc` over Named Pipes to guarantee strong typing and eliminate port collisions. When adding new communications:
 
-1. Define the interface in `src/shared/protocol.ts`
-2. Add it to the `ClientMessage` or `ServerMessage` union types
-3. Implement the handler in both `src/server/McpServer.ts` and `src/client/ServerConnection.ts`
+1. Define the `RequestType` or `NotificationType` in `src/shared/protocol.ts`.
+2. Ensure you handle `CancellationToken` for any requested task logic.
+3. Implement the JSON-RPC handler (`.onRequest` or `.onNotification`) in both `src/server/IpcServer.ts`/`TaskManager.ts` and `src/client/ServerConnection.ts`.
 
 See `.claude/rules/claude-dev-patterns.md` for full details.
 

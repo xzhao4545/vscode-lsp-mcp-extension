@@ -1,8 +1,3 @@
-/**
- * ConnectionManager - Manages client-server connection and reconnection logic
- * // CN: 连接管理器 - 管理客户端与服务器的连接、重连逻辑
- */
-
 import * as fs from "node:fs";
 import {
 	RECONNECT_INITIAL_DELAY,
@@ -10,7 +5,6 @@ import {
 	RECONNECT_MAX_DELAY,
 	RECONNECT_MULTIPLIER,
 } from "../shared/constants";
-import type { TaskMessage } from "../shared/protocol";
 import type { StateFile } from "../shared/stateFile";
 import type { DebugLogEntry } from "../shared/types";
 import { StateUtils } from "../shared/types";
@@ -18,6 +12,7 @@ import Config from "./Config";
 import type { DebugLogStore } from "./debug/DebugLogStore";
 import type { NotificationManager } from "./NotificationManager";
 import { ServerConnection } from "./ServerConnection";
+import * as vscode from "vscode";
 
 export type ConnectionState =
 	| "disconnected"
@@ -60,7 +55,7 @@ export class ConnectionManager {
 	constructor(
 		private stateFile: StateFile,
 		private notifications: NotificationManager,
-		private onTaskCallback: (task: TaskMessage) => Promise<string>,
+		private onTaskCallback: (tool: string, args: Record<string, unknown>, token: vscode.CancellationToken) => Promise<unknown>,
 		initialPort: number,
 		debugLogStore?: DebugLogStore,
 	) {
@@ -121,7 +116,11 @@ export class ConnectionManager {
 		this.setState("connecting");
 
 		try {
-			this.connection = new ServerConnection(this.port);
+            const state = await this.stateFile.read();
+            if (!state || !state.pipePath) {
+                throw new Error("pipePath not available in server state file");
+            }
+			this.connection = new ServerConnection(state.pipePath);
 			await this.connection.connect();
 			this.connection.onTask(this.wrapTaskCallback());
 			this.setState("connected");
@@ -303,7 +302,7 @@ export class ConnectionManager {
 		if (!this.connection) {
 			return;
 		}
-		this.connection.send({ type: "restart" });
+		this.connection.sendRestart();
 	}
 
 	/**
@@ -318,14 +317,15 @@ export class ConnectionManager {
 	 * Wrap task callback - Wrap callback to log debug information
 	 * // CN: 包装任务回调，记录调试日志
 	 */
-	private wrapTaskCallback(): (task: TaskMessage) => Promise<unknown> {
-		return async (task: TaskMessage): Promise<unknown> => {
+	private wrapTaskCallback(): (tool: string, args: Record<string, unknown>, token: vscode.CancellationToken) => Promise<unknown> {
+		return async (tool: string, args: Record<string, unknown>, token: vscode.CancellationToken): Promise<unknown> => {
 			const startTime = Date.now();
 			let success = true;
 			let result: string = "";
 			try {
-				result = await this.onTaskCallback(task);
-				return result;
+				const r = await this.onTaskCallback(tool, args, token);
+				result = String(r);
+				return r;
 			} catch (error) {
 				success = false;
 				result = (error as Error).stack ?? (error as Error).message;
@@ -334,8 +334,8 @@ export class ConnectionManager {
 				if (Config.getEnableDebug() && this.debugLogStore) {
 					const entry: DebugLogEntry = {
 						timestamp: startTime,
-						tool: task.tool,
-						args: task.args,
+						tool: tool,
+						args: args,
 						result: result,
 						duration: Date.now() - startTime,
 						success,

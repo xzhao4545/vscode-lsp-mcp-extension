@@ -147,100 +147,66 @@ Add any user-facing strings to `l10n/bundle.l10n.json` and `l10n/bundle.l10n.zh-
 
 ---
 
-## 3. Adding a New Protocol Message
+## 3. Modifying Protocol Communications (JSON-RPC IPC)
 
-The app uses a strictly typed message structure in `src/shared/protocol.ts`.
+The extension uses `vscode-jsonrpc` for IPC over Named Pipes (Domain Sockets) between the VSCode extension clients and the standalone Node server. We strictly DO NOT use WebSockets or raw JSON passing.
 
-### Step 1: Define the message interface
+### Step 1: Define Protocol Types in `src/shared/protocol.ts`
 
-Open `src/shared/protocol.ts` and add a new interface:
+Always use `RequestType` for calls expecting a response and `NotificationType` for fire-and-forget events.
 
 ```typescript
-/** Progress update message // CN: 进度更新消息 */
-export interface ProgressUpdateMessage {
-  type: "progress";
-  requestId: string;
-  progress: number;
-  message?: string;
+import { RequestType, NotificationType } from "vscode-jsonrpc/node";
+
+/** Task execution request */
+export const taskRequest = new RequestType<{ tool: string, args: Record<string, unknown> }, unknown, Error>("task");
+
+/** Progress update notification */
+export const progressNotification = new NotificationType<{ progress: number, message?: string }>("progress");
+```
+
+### Step 2: Implement Request/Notification Handlers
+
+**Client-side (`src/client/ServerConnection.ts`):**
+
+To send a notification to the server:
+```typescript
+this.connection.sendNotification(progressNotification, { progress: 50 });
+```
+
+To handle a request from the server, with cancellation support:
+```typescript
+this.connection.onRequest(taskRequest, async (params, token) => {
+  // `token` is a CancellationToken. Pass it down to your tool executions!
+  return await this.executeTask(params, token);
+});
+```
+
+**Server-side (`src/server/TaskManager.ts` or `src/server/IpcServer.ts`):**
+
+To send a request to a connected extension host window (and `await` the response):
+```typescript
+try {
+  const result = await connection.sendRequest(taskRequest, { tool, args }, mcpCancellationToken);
+  return result;
+} catch (error) {
+  // Error handling is handled natively by jsonrpc
+  throw error;
 }
 ```
 
-### Step 2: Add to union types
+### Step 3: Cancellation Tokens (Guardrail)
 
-Add the new type to the appropriate union:
-
-```typescript
-// For messages Window → Server:
-export type ClientMessage =
-  | RegisterMessage
-  | ResultMessage
-  | ErrorMessage
-  | RestartMessage
-  | ProgressUpdateMessage;  // Add here
-
-// For messages Server → Window:
-export type ServerMessage =
-  | RegisteredMessage
-  | TaskMessage
-  | ProgressUpdateMessage;  // Add here
-```
-
-### Step 3: Implement handler in McpServer.ts
-
-Open `src/server/McpServer.ts`. If the message flows Server → Client, handle it in `handleMessage()`:
-
-```typescript
-private async handleMessage(data: string): Promise<void> {
-  try {
-    const msg = JSON.parse(data) as ServerMessage;
-    switch (msg.type) {
-      case "registered":
-        console.log(`[Connection] Registered as ${msg.windowId}`);
-        break;
-      case "task":
-        await this.executeTask(msg);
-        break;
-      case "progress":  // Add new case
-        // Handle progress update
-        break;
-    }
-  } catch (err) {
-    console.error("[Connection] Failed to handle message:", err);
-  }
-}
-```
-
-### Step 4: Implement handler in ServerConnection.ts
-
-Open `src/client/ServerConnection.ts`. Handle the message in the corresponding callback:
-
-```typescript
-private async handleMessage(data: string): Promise<void> {
-  try {
-    const msg = JSON.parse(data) as ServerMessage;
-    switch (msg.type) {
-      case "registered":
-        console.log(`[Connection] Registered as ${msg.windowId}`);
-        break;
-      case "task":
-        await this.executeTask(msg);
-        break;
-      case "progress":  // Add new case
-        // Handle progress update
-        break;
-    }
-  } catch (err) {
-    console.error("[Connection] Failed to handle message:", err);
-  }
-}
-```
+* **NEVER** ignore the `CancellationToken` provided by JSON-RPC.
+* When executing tasks, pass the token down to the tools.
+* Check `token.isCancellationRequested` during long-running loops or pass it to standard VSCode APIs.
 
 ### Protocol Pattern Checklist
 
-- [ ] Define interface in `src/shared/protocol.ts`
-- [ ] Add to `ClientMessage` or `ServerMessage` union
-- [ ] Handle in `McpServer.ts` switch statement
-- [ ] Handle in `ServerConnection.ts` switch statement
+- [ ] Define `RequestType` or `NotificationType` in `src/shared/protocol.ts`
+- [ ] Connect handlers using `.onRequest()` or `.onNotification()`
+- [ ] Pass the `CancellationToken` consistently from request handlers through execution logic.
+- [ ] Never use manual `requestId` tracking or `Math.random` generated IDs. Let JSON-RPC handle it.
 
 ---
 
