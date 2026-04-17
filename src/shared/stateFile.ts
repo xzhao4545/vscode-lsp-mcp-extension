@@ -54,13 +54,13 @@ export class StateFile {
 
 	private createInstanceState(
 		port: number,
-	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime" | "pipePath"> {
+	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime"> & Partial<Pick<ServerStateData, "pipePath">> {
 		return {
 			port,
-			pipePath: this.pipePath,
 			pid: process.pid,
 			instanceId: crypto.randomUUID(),
 			startTime: Date.now(),
+			...(this.pipePath ? { pipePath: this.pipePath } : {}),
 		};
 	}
 

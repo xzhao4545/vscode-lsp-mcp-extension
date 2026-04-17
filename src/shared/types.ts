@@ -131,6 +131,7 @@ const path = require("node:path");
 
 /**
  * Generate a safe IPC socket/pipe path
+ * // EN: Deprecated - no longer needed for stdio // CN: 已弃用 - stdio 不再需要此函数
  * // CN: 生成安全的 IPC socket 管道路径
  */
 export function getIpcPath(storagePath: string): string {
