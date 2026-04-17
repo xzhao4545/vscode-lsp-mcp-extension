@@ -3,6 +3,7 @@
  * // CN: 服务器连接 - 管理与 MCP 服务器的 WebSocket 连接
  */
 
+import { l10n } from "vscode";
 import * as vscode from "vscode";
 import WebSocket from "ws";
 import type { ServerMessage, TaskMessage } from "../shared/protocol";
@@ -34,7 +35,7 @@ export class ServerConnection {
 				this.handleClose();
 			});
 			this.ws.on("error", (error) => {
-				console.log(`errpr ${error.message}`);
+				console.log(`error ${error.message}`);
 				reject();
 			});
 		});
@@ -96,7 +97,7 @@ export class ServerConnection {
 	private async executeTask(msg: TaskMessage): Promise<void> {
 		try {
 			if (!this.onTaskCallback) {
-				throw new Error("No task callback registered");
+				throw new Error(l10n.t("No task callback registered"));
 			}
 			const result = await this.onTaskCallback(msg);
 			this.send({ type: "result", requestId: msg.requestId, data: result });

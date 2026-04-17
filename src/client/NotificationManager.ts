@@ -3,23 +3,26 @@
  * // CN: 通知管理器
  */
 
-import * as vscode from "vscode";
+import { l10n, window } from "vscode";
 
 type NotificationType = "info" | "warning" | "error";
 
 interface NotificationConfig {
-	message: string;
+	messageKey: string;
 	type: NotificationType;
 }
 
 const NOTIFICATIONS: Record<string, NotificationConfig> = {
-	connected: { message: "已连接到 MCP 服务器", type: "info" },
-	disconnected: { message: "与服务器断开连接", type: "warning" },
-	reconnecting: { message: "正在尝试重新连接...", type: "info" },
-	reconnectFailed: { message: "重连失败，请手动重试", type: "error" },
-	serverRestarting: { message: "服务器即将重启", type: "warning" },
-	portConflict: { message: "端口被占用", type: "error" },
-	serverError: { message: "服务器启动失败", type: "error" },
+	connected: { messageKey: "Connected to MCP server", type: "info" },
+	disconnected: { messageKey: "Disconnected from server", type: "warning" },
+	reconnecting: { messageKey: "Attempting to reconnect...", type: "info" },
+	reconnectFailed: {
+		messageKey: "Reconnect failed, please retry manually",
+		type: "error",
+	},
+	serverRestarting: { messageKey: "Server is restarting", type: "warning" },
+	portConflict: { messageKey: "Port {0} is already in use", type: "error" },
+	serverError: { messageKey: "Server startup failed", type: "error" },
 };
 
 export type NotificationKey = keyof typeof NOTIFICATIONS;
@@ -35,17 +38,18 @@ export class NotificationManager {
 	 */
 	show(key: NotificationKey, extra?: string): void {
 		const config = NOTIFICATIONS[key];
-		const message = extra ? `${config.message}: ${extra}` : config.message;
+		const message = l10n.t(config.messageKey);
+		const fullMessage = extra ? `${message}: ${extra}` : message;
 
 		switch (config.type) {
 			case "info":
-				vscode.window.showInformationMessage(message);
+				window.showInformationMessage(fullMessage);
 				break;
 			case "warning":
-				vscode.window.showWarningMessage(message);
+				window.showWarningMessage(fullMessage);
 				break;
 			case "error":
-				vscode.window.showErrorMessage(message);
+				window.showErrorMessage(fullMessage);
 				break;
 		}
 	}
@@ -57,17 +61,17 @@ export class NotificationManager {
 	async showPortConflictDialog(
 		port: number,
 	): Promise<"retry" | "change" | "cancel"> {
-		const result = await vscode.window.showErrorMessage(
-			`端口 ${port} 已被占用`,
-			"重试",
-			"更换端口",
-			"取消",
+		const result = await window.showErrorMessage(
+			l10n.t("Port {0} is already in use", port),
+			l10n.t("Retry"),
+			l10n.t("Change port"),
+			l10n.t("Cancel"),
 		);
 
 		switch (result) {
-			case "重试":
+			case "Retry":
 				return "retry";
-			case "更换端口":
+			case "Change port":
 				return "change";
 			default:
 				return "cancel";
@@ -79,13 +83,13 @@ export class NotificationManager {
 	 * // CN: 让用户输入新端口
 	 */
 	async promptNewPort(currentPort: number): Promise<number | null> {
-		const input = await vscode.window.showInputBox({
-			prompt: "请输入新端口号",
+		const input = await window.showInputBox({
+			prompt: l10n.t("Enter new port number"),
 			value: String(currentPort + 1),
 			validateInput: (value) => {
 				const port = parseInt(value, 10);
 				if (Number.isNaN(port) || port < 1024 || port > 65535) {
-					return "请输入 1024-65535 之间的端口号";
+					return l10n.t("Port must be between 1024-65535");
 				}
 				return null;
 			},
@@ -99,11 +103,13 @@ export class NotificationManager {
 	 * // CN: 确认重启服务器
 	 */
 	async confirmRestart(): Promise<boolean> {
-		const result = await vscode.window.showWarningMessage(
-			"确定要重启 MCP 服务器吗？所有连接将断开。",
-			"确定",
-			"取消",
+		const result = await window.showWarningMessage(
+			l10n.t(
+				"Are you sure you want to restart MCP server? All connections will be disconnected.",
+			),
+			l10n.t("Confirm"),
+			l10n.t("Cancel"),
 		);
-		return result === "确定";
+		return result === l10n.t("Confirm");
 	}
 }
