@@ -31,6 +31,8 @@ export class ServerManager {
 	private serverScript: string;
 	private storagePath: string;
 	private lockPath: string;
+	// EN: Stores the server child process for IPC access (stdin/stdout) // CN: 存储服务器子进程以供 IPC 访问（stdin/stdout）
+	private serverProcess: import("node:child_process").ChildProcess | null = null;
 
 	constructor(
 		context: vscode.ExtensionContext,
@@ -150,6 +152,8 @@ export class ServerManager {
 		}
 
 		try {
+			// EN: Clear stale process reference // CN: 清除旧的进程引用
+			this.serverProcess = null;
 			// EN: Spawn server process // CN: 启动服务器进程
 			await this.spawnServer(port, forceRestart);
 		} finally {
@@ -161,8 +165,16 @@ export class ServerManager {
 	}
 
 	/**
+	 * Get server process - Return the server child process for IPC access
+	 * // EN: Returns the server child process for IPC stdin/stdout access // CN: 返回服务器子进程以供 IPC stdin/stdout 访问
+	 */
+	getServerProcess(): import("node:child_process").ChildProcess | null {
+		return this.serverProcess;
+	}
+
+	/**
 	 * Spawn server process - Start the server child process
-	 * // CN: 启动服务器进程
+	 * // EN: Spawn server with piped stdio for IPC communication // CN: 启动服务器进程，使用管道 stdio 用于 IPC 通信
 	 */
 	private async spawnServer(
 		port: number,
@@ -187,12 +199,11 @@ export class ServerManager {
 			args.push("--cors");
 		}
 
-		const serverProcess = spawn(nodePath, args, {
-			detached: true,
-			stdio: "ignore",
+		// EN: Spawn with piped stdio to enable IPC via stdin/stdout // CN: 使用管道 stdio 启动以通过 stdin/stdout 进行 IPC
+		this.serverProcess = spawn(nodePath, args, {
+			detached: false,
+			stdio: ["pipe", "pipe", "ignore"],
 		});
-
-		serverProcess.unref();
 	}
 
 	/**
