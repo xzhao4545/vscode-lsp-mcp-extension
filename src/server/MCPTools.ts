@@ -97,6 +97,7 @@ export const TOOL_SCHEMAS = {
 		}),
 	},
 
+	// TODO: [test] getSymbolStruct schema defined but no test data file at src/test/testData/mcp/getSymbolStruct.json // CN: getSymbolStruct 的模式已定义但测试数据文件不存在
 	getSymbolStruct: {
 		description:
 			"Get the structure of a specific symbol (class, method, etc.). Use this to expand collapsed symbols from getFileStruct results.\n" +

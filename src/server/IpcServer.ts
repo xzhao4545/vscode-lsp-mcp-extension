@@ -34,6 +34,7 @@ export class IpcServer {
 			console.error(`[IPC Server] Error:`, err);
 		});
 
+		// TODO: [logic] onClientDisconnected() called in constructor before any client connects - should be called when client actually disconnects // CN: onClientDisconnected() 在构造函数中调用，但此时还没有任何客户端连接
 		this.shutdownManager.onClientDisconnected();
 	}
 
@@ -58,6 +59,7 @@ export class IpcServer {
 		});
 	}
 
+	// TODO: [race] 'closed' flag checked in handleRestart() (line 135) but NOT in handleConnection() - new connections could be accepted after close // CN: 'closed' 标志在 handleRestart() 中检查，但在 handleConnection() 中未检查
 	private handleConnection(socket: net.Socket): void {
 		const windowId = `win-${crypto.randomUUID().slice(0, 8)}`;
 		console.log(`[IPC Server] New connection: ${windowId}`);
@@ -88,6 +90,7 @@ export class IpcServer {
 			this.clients.delete(connection);
 		});
 
+		// TODO: [race] clients.delete() called in both onClose (line 88) and onError (line 94) - potential double-delete if both handlers fire // CN: clients.delete() 在 onClose 和 onError 中都被调用，可能导致双重删除
 		connection.onError((err) => {
 			console.error(`[IPC Server] Error on ${windowId}:`, err);
 			connection.dispose();

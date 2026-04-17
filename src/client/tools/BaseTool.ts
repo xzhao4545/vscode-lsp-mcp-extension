@@ -30,6 +30,7 @@ export abstract class BaseTool {
 	 * format - Format result as Markdown
 	 * // CN: 格式化结果为 Markdown
 	 */
+	// TODO: [data] Abstract format() declares args parameter but 4 tools (Hover, GetFileStruct, GetSymbolStruct, GetScopeParent) omit it - signature inconsistency // CN: 抽象 format() 声明了 args 参数，但 4 个工具忽略了它
 	abstract format(result: unknown, args: Record<string, unknown>): string;
 
 	/**
