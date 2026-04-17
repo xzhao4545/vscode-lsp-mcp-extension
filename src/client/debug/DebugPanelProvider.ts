@@ -1,5 +1,6 @@
 /**
- * 调试面板 - TreeDataProvider 实现
+ * DebugPanelProvider - TreeDataProvider implementation for debug panel
+ * // CN: 调试面板 - TreeDataProvider 实现
  */
 
 import * as vscode from "vscode";
@@ -26,21 +27,21 @@ export class DebugLogItem extends vscode.TreeItem {
 		);
 		this.contextValue = "debugLogEntry";
 
-		// 双击打开详情
+		// EN: Double-click to open details // CN: 双击打开详情
 		this.command = {
 			command: "ide-lsp-mcp.showDebugDetail",
-			title: "查看详情",
+			title: "View Details", // CN: 查看详情
 			arguments: [entry.timestamp],
 		};
 	}
 
 	private buildTooltip(): vscode.MarkdownString {
 		const md = new vscode.MarkdownString();
-		md.appendMarkdown(`**工具**: ${this.entry.tool}\n\n`);
-		md.appendMarkdown(`**耗时**: ${this.entry.duration}ms\n\n`);
-		md.appendMarkdown(`**状态**: ${this.entry.success ? "成功" : "失败"}\n\n`);
+		md.appendMarkdown(`**Tool**: ${this.entry.tool}\n\n`); // EN: 工具
+		md.appendMarkdown(`**Duration**: ${this.entry.duration}ms\n\n`); // EN: 耗时
+		md.appendMarkdown(`**Status**: ${entry.success ? "Success" : "Failed"}\n\n`); // EN: 状态
 		md.appendMarkdown(
-			`**参数**: \`${JSON.stringify(this.entry.args).slice(0, 100)}...\``,
+			`**Args**: \`${JSON.stringify(this.entry.args).slice(0, 100)}...\``,
 		);
 		return md;
 	}
