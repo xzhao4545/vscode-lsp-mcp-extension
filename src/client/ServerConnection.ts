@@ -34,6 +34,7 @@ export class ServerConnection {
 	 * // CN: 连接到服务器
 	 */
 	async connect(): Promise<void> {
+		// TODO: [scope] No timeout handling on client side - request can hang indefinitely if server doesn't respond // CN: 客户端没有超时处理 - 如果服务器不响应，请求可能会无限挂起
 		return new Promise((resolve, reject) => {
 			this.socket = net.createConnection(this.pipePath);
 
@@ -72,6 +73,7 @@ export class ServerConnection {
 			if (!this.onTaskCallback) {
 				throw new Error(l10n.t("No task callback registered"));
 			}
+			// TODO: [scope] CancellationToken is passed to callback but no mechanism exists to actually use it for cancellation // CN: CancellationToken 被传递给回调，但没有机制实际使用它进行取消
 			return await this.onTaskCallback(params.tool, params.args, token);
 		});
 

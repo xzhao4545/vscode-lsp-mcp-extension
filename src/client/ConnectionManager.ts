@@ -187,6 +187,7 @@ export class ConnectionManager {
 			this.reconnectAttempts < RECONNECT_MAX_ATTEMPTS &&
 			!this.shouldStop
 		) {
+			// TODO: [logic] The delay calculation has RECONNECT_MULTIPLIER but the effect is lost because startReconnect always starts from attempt 0 // CN: 延迟计算有 RECONNECT_MULTIPLIER 但效果丢失了，因为 startReconnect 总是从 attempt 0 开始
 			const delay = Math.min(
 				RECONNECT_INITIAL_DELAY *
 					RECONNECT_MULTIPLIER ** this.reconnectAttempts,
@@ -231,6 +232,7 @@ export class ConnectionManager {
 			return;
 		}
 
+		// TODO: [logic] manualReconnect() resets reconnectAttempts to 0, losing the benefit of exponential backoff // CN: manualReconnect() 将 reconnectAttempts 重置为 0，失去了指数退避的好处
 		this.reconnectAttempts = 0;
 		this.shouldStop = false;
 
