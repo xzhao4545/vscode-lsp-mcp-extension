@@ -76,3 +76,15 @@ See `.claude/rules/claude-dev-patterns.md` for full details.
 See `.claude/rules/claude-dev-patterns.md` for patterns on:
 - Adding new VSCode commands (package.json → registration)
 - Adding new MCP tools (MCPTools.ts schema → Tool class → TaskExecutor)
+
+### Testing Strategy
+
+All new tools and significant changes MUST have corresponding tests:
+
+| Change Type | Test Location | Run Command |
+|-------------|---------------|-------------|
+| New MCP tool | `src/test/testData/mcp/{toolName}.json` + expected | `pnpm test-mcp` |
+| VSCode command | `src/test/extension.test.ts` | `pnpm test` |
+| Protocol message | Add to relevant test suite | `pnpm test-mcp` |
+
+See `.claude/rules/testing-strategy.md` for full details.

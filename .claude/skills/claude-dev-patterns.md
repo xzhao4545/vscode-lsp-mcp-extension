@@ -42,4 +42,15 @@ Add new protocol message to vscode-lsp-mcp-extension.
 2. **src/server/McpServer.ts** - Add case in `handleMessage()` switch
 3. **src/client/ServerConnection.ts** - Add case in `handleMessage()` switch
 
-See `.claude/rules/claude-dev-patterns.md` for full details.
+---
+
+Add tests for a new tool in vscode-lsp-mcp-extension.
+
+## Testing Pattern
+
+1. **src/test/testData/mcp/{toolName}.json** - Add test input data
+2. **src/test/testData/mcp/expected/{toolName}/** - Add expected result MD files
+3. **src/test/mcp.test.ts** - Register: `test("{toolName}", () => runToolTest(client, "{toolName}"))`
+4. Run: `export TEST_PROJECT_PATH="/path"` && `pnpm test-mcp`
+
+See `.claude/rules/testing-strategy.md` for full details.
