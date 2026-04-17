@@ -3,7 +3,11 @@
  * // CN: TaskManager 单元测试
  */
 
-import { deepStrictEqual, strictEqual, throws } from "node:assert";
+import {
+	deepStrictEqual,
+	strictEqual,
+	rejects,
+} from "node:assert";
 import sinon, { type SinonStub } from "sinon";
 import { TaskManager } from "../../server/TaskManager";
 import type { ClientInfo } from "../../server/ClientRegistry";
@@ -93,10 +97,7 @@ suite("TaskManager", function () {
 			taskManager.handleError(requestId, { message: errorMessage });
 
 			// EN: Promise should reject // CN: Promise 应该 reject
-			await throws(
-				async () => await dispatchPromise,
-				new RegExp(errorMessage),
-			);
+			await rejects(dispatchPromise, new RegExp(errorMessage));
 		});
 
 		test("times out after specified duration", async function () {
@@ -117,8 +118,8 @@ suite("TaskManager", function () {
 			clock.tick(customTimeout + 1);
 
 			// EN: Promise should reject with timeout error // CN: Promise 应该 reject 并显示超时错误
-			await throws(
-				async () => await dispatchPromise,
+			await rejects(
+				dispatchPromise,
 				new RegExp(`Task timeout after ${customTimeout}ms`),
 			);
 		});
@@ -135,8 +136,8 @@ suite("TaskManager", function () {
 			clock.tick(DEFAULT_TIMEOUT + 1);
 
 			// EN: Promise should reject with default timeout error // CN: Promise 应该 reject 并显示默认超时错误
-			await throws(
-				async () => await dispatchPromise,
+			await rejects(
+				dispatchPromise,
 				new RegExp(`Task timeout after ${DEFAULT_TIMEOUT}ms`),
 			);
 		});
@@ -217,10 +218,7 @@ suite("TaskManager", function () {
 			taskManager.handleError(requestId, { message: errorMsg });
 
 			// EN: Should reject with error // CN: 应该 reject 并显示错误
-			await throws(
-				async () => await dispatchPromise,
-				new RegExp(errorMsg),
-			);
+			await rejects(dispatchPromise, new RegExp(errorMsg));
 		});
 
 		test("does nothing for unknown requestId", function () {
@@ -255,7 +253,7 @@ suite("TaskManager", function () {
 
 			// EN: Advance clock - should not trigger timeout // CN: 时钟推进 - 不应该触发超时
 			clock.tick(20000);
-			await throws(async () => await dispatchPromise, /error/);
+			await rejects(dispatchPromise, /error/);
 		});
 
 		test("uses default error message when none provided", async function () {
@@ -273,10 +271,7 @@ suite("TaskManager", function () {
 			taskManager.handleError(requestId, { message: "" });
 
 			// EN: Should reject with default message // CN: 应该 reject 并显示默认消息
-			await throws(
-				async () => await dispatchPromise,
-				/Task failed/,
-			);
+			await rejects(dispatchPromise, /Task failed/);
 		});
 	});
 
@@ -291,11 +286,6 @@ suite("TaskManager", function () {
 			const dispatchPromise1 = taskManager.dispatch(client, "tool1", {});
 			const dispatchPromise2 = taskManager.dispatch(client, "tool2", {});
 
-			// EN: Get requestIds // CN: 获取 requestIds
-			const sendStub = getSendStub(client);
-			const sendCall1 = sendStub.getCall(0);
-			const sendCall2 = sendStub.getCall(1);
-
 			// EN: Cleanup // CN: 清理
 			taskManager.cleanup();
 
@@ -303,14 +293,8 @@ suite("TaskManager", function () {
 			strictEqual(clearTimeoutSpy.callCount, 2);
 
 			// EN: Both promises should reject with shutdown error // CN: 两个 promise 都应该 reject 并显示服务器关闭错误
-			await throws(
-				async () => await dispatchPromise1,
-				/Server shutting down/,
-			);
-			await throws(
-				async () => await dispatchPromise2,
-				/Server shutting down/,
-			);
+			await rejects(dispatchPromise1, /Server shutting down/);
+			await rejects(dispatchPromise2, /Server shutting down/);
 		});
 
 		test("clears pending map after cleanup", function () {
