@@ -27,6 +27,8 @@ export class GetDiagnosticsTool extends BaseTool {
 	readonly name = "getDiagnostics";
 
 	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<GetDiagnosticsResult> {
+		// TODO: [logic] The CancellationToken parameter is received but NOT passed to waitForDiagnostics, // CN: CancellationToken参数已接收但未传递给waitForDiagnostics
+		// TODO: [race] so if the caller cancels this operation, waitForDiagnostics will keep polling until timeout // CN: 因此如果调用者取消此操作，waitForDiagnostics将继续轮询直到超时
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,
@@ -92,6 +94,7 @@ export class GetDiagnosticsTool extends BaseTool {
 	 * // CN: - 如果文件已加载，直接返回（诊断可能已存在）
 	 * - If file is not loaded, open in background and wait for diagnostics event
 	 * // CN: - 如果文件未加载，后台打开并等待诊断事件
+	 * TODO: [race] Uses polling via waitForDiagnosticsEvent but has no CancellationToken to abort early // CN: 使用waitForDiagnosticsEvent轮询，但没有CancellationToken提前中止
 	 */
 	private async waitForDiagnostics(uri: vscode.Uri): Promise<void> {
 		if (vscode.languages.getDiagnostics(uri).length > 0) {
@@ -133,6 +136,8 @@ export class GetDiagnosticsTool extends BaseTool {
 	 * // CN: 等待诊断变化事件
 	 * @param uri - File URI // CN: 文件 URI
 	 * @param timeout - Timeout in milliseconds // CN: 超时时间（毫秒）
+	 * TODO: [race] Uses setInterval polling and setTimeout for timeout, but does NOT accept a CancellationToken // CN: 使用setInterval轮询和setTimeout超时，但不接受CancellationToken
+	 * TODO: [scope] If cancelled externally, polling continues until the timeout fires regardless // CN: 如果外部取消，轮询将继续直到超时触发
 	 */
 	private waitForDiagnosticsEvent(
 		uri: vscode.Uri,
