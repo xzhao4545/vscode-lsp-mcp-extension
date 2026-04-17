@@ -3,19 +3,12 @@
  * // CN: 任务管理器 - 任务分发与结果收集
  */
 
-import * as crypto from "node:crypto";
+import { CancellationTokenSource } from "vscode-jsonrpc";
 import { DEFAULT_TIMEOUT } from "../shared/constants";
+import { taskRequest } from "../shared/protocol";
 import type { ClientInfo } from "./ClientRegistry";
 
-interface PendingTask {
-	resolve: (data: unknown) => void;
-	reject: (error: Error) => void;
-	timeout: NodeJS.Timeout;
-}
-
 export class TaskManager {
-	private pending = new Map<string, PendingTask>();
-
 	/**
 	 * Dispatch task to specified client
 	 * // CN: 分发任务到指定客户端
@@ -26,63 +19,43 @@ export class TaskManager {
 		args: Record<string, unknown>,
 		timeout: number = DEFAULT_TIMEOUT,
 	): Promise<unknown> {
-		const requestId = crypto.randomUUID();
+		const tokenSource = new CancellationTokenSource();
 
-		return new Promise((resolve, reject) => {
-			// Set timeout // CN: 设置超时
-			const timeoutHandle = setTimeout(() => {
-				this.pending.delete(requestId);
+		let timeoutHandle: NodeJS.Timeout | undefined;
+		const timeoutPromise = new Promise((_, reject) => {
+			timeoutHandle = setTimeout(() => {
+				tokenSource.cancel();
 				reject(new Error(`Task timeout after ${timeout}ms`));
 			}, timeout);
-
-			this.pending.set(requestId, { resolve, reject, timeout: timeoutHandle });
-
-			// Send task // CN: 发送任务
-			client.ws.send(
-				JSON.stringify({
-					type: "task",
-					requestId,
-					tool,
-					args,
-				}),
-			);
-
-			console.log(
-				`[TaskManager] Dispatched ${tool} to ${client.windowId} (${requestId})`,
-			);
 		});
-	}
 
-	/**
-	 * Handle successful result
-	 * // CN: 处理成功结果
-	 */
-	handleResult(requestId: string, data: unknown): void {
-		const task = this.pending.get(requestId);
-		if (task) {
-			clearTimeout(task.timeout);
-			this.pending.delete(requestId);
-			task.resolve(data);
-			console.log(`[TaskManager] Result received for ${requestId}`);
-		}
-	}
-
-	/**
-	 * Handle error
-	 * // CN: 处理错误
-	 */
-	handleError(
-		requestId: string,
-		error: { message: string; code?: string },
-	): void {
-		const task = this.pending.get(requestId);
-		if (task) {
-			clearTimeout(task.timeout);
-			this.pending.delete(requestId);
-			task.reject(new Error(error.message || "Task failed"));
+		try {
 			console.log(
-				`[TaskManager] Error received for ${requestId}: ${error.message}`,
+				`[TaskManager] Dispatched ${tool} to ${client.windowId}`,
 			);
+			
+			// Send task in a Promise.race // CN: 在 Promise.race 中发送任务
+			const result = await Promise.race([
+				client.connection.sendRequest(
+					taskRequest,
+					{ tool, args },
+					tokenSource.token
+				),
+				timeoutPromise
+			]);
+
+			console.log(`[TaskManager] Result received for ${client.windowId}`);
+			return result;
+		} catch (error) {
+			console.log(
+				`[TaskManager] Error received for ${client.windowId}: ${(error as Error).message}`,
+			);
+			throw error;
+		} finally {
+			if (timeoutHandle) {
+				clearTimeout(timeoutHandle);
+			}
+			tokenSource.dispose();
 		}
 	}
 
@@ -91,10 +64,6 @@ export class TaskManager {
 	 * // CN: 清理所有待处理任务
 	 */
 	cleanup(): void {
-		for (const [, task] of this.pending) {
-			clearTimeout(task.timeout);
-			task.reject(new Error("Server shutting down"));
-		}
-		this.pending.clear();
+		// No longer needed as JSON-RPC handles its own pending states natively
 	}
 }

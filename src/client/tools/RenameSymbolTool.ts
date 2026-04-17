@@ -24,7 +24,7 @@ interface RenameSymbolResult {
 export class RenameSymbolTool extends BaseTool {
 	readonly name = "renameSymbol";
 
-	async execute(args: Record<string, unknown>): Promise<RenameSymbolResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<RenameSymbolResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,

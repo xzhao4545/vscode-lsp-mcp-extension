@@ -159,7 +159,7 @@ export async function resolveWorkspaceQuery(
 export class SearchSymbolInWorkspaceTool extends BaseTool {
 	readonly name = "searchSymbolInWorkspace";
 
-	async execute(args: Record<string, unknown>): Promise<SearchSymbolResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<SearchSymbolResult> {
 		const query = args.query as string;
 		const projectPath = args.projectPath as string;
 		const symbolType =

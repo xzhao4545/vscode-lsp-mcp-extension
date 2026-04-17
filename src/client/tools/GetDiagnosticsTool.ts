@@ -26,7 +26,7 @@ interface GetDiagnosticsResult {
 export class GetDiagnosticsTool extends BaseTool {
 	readonly name = "getDiagnostics";
 
-	async execute(args: Record<string, unknown>): Promise<GetDiagnosticsResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<GetDiagnosticsResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,

@@ -33,7 +33,7 @@ interface GoToDefinitionResult {
 export class GoToDefinitionTool extends BaseTool {
 	readonly name = "goToDefinition";
 
-	async execute(args: Record<string, unknown>): Promise<GoToDefinitionResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<GoToDefinitionResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,

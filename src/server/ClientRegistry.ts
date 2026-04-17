@@ -4,12 +4,12 @@
  */
 
 import { isAbsolute, normalize, relative, resolve } from "node:path";
-import type { WebSocket } from "ws";
+import type { MessageConnection } from "vscode-jsonrpc/node";
 import type { Folder, ProjectInfo } from "../shared/types";
 
 /** Client information */ // CN: 客户端信息
 export interface ClientInfo {
-	ws: WebSocket;
+	connection: MessageConnection;
 	windowId: string;
 	folders: Folder[];
 	connectedAt: number;
@@ -20,14 +20,14 @@ export class ClientRegistry {
 	private projectIndex = new Map<string, string>(); // projectPath -> windowId // CN: projectPath -> windowId
 
 	/** Register window */ // CN: 注册窗口
-	register(windowId: string, ws: WebSocket, folders: Folder[]): void {
+	register(windowId: string, connection: MessageConnection, folders: Folder[]): void {
 		// EN: Normalize paths // CN: 格式化路径
 		folders = folders.map((f) => {
 			f.path = ClientRegistry.normalizePath(f.path);
 			return f;
 		});
 		this.clients.set(windowId, {
-			ws,
+			connection,
 			windowId,
 			folders,
 			connectedAt: Date.now(),

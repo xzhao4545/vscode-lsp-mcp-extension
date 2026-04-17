@@ -15,7 +15,7 @@ interface SyncFilesResult {
 export class SyncFilesTool extends BaseTool {
 	readonly name = "syncFiles";
 
-	async execute(args: Record<string, unknown>): Promise<SyncFilesResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<SyncFilesResult> {
 		const projectPath = args.projectPath as string;
 		const paths = args.paths as string[] | undefined;
 		try {

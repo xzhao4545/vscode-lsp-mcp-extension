@@ -60,7 +60,7 @@ export async function flattenIncomingCalls(
 export class IncomingCallsTool extends BaseTool {
 	readonly name = "incomingCalls";
 
-	async execute(args: Record<string, unknown>): Promise<IncomingCallsResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<IncomingCallsResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,

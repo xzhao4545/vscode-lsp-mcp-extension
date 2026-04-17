@@ -7,7 +7,7 @@ import * as crypto from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import * as path from "node:path";
 import { SERVER_STATE_FILE } from "./constants";
-import { ServerState, type ServerStateData, StateUtils } from "./types";
+import { ServerState, type ServerStateData, StateUtils, getIpcPath } from "./types";
 
 /**
  * State file manager
@@ -15,9 +15,11 @@ import { ServerState, type ServerStateData, StateUtils } from "./types";
  */
 export class StateFile {
 	private filePath: string;
+	private pipePath: string;
 
 	constructor(storagePath: string) {
 		this.filePath = path.join(storagePath, SERVER_STATE_FILE);
+		this.pipePath = getIpcPath(storagePath);
 	}
 
 	/**
@@ -52,9 +54,10 @@ export class StateFile {
 
 	private createInstanceState(
 		port: number,
-	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime"> {
+	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime" | "pipePath"> {
 		return {
 			port,
+			pipePath: this.pipePath,
 			pid: process.pid,
 			instanceId: crypto.randomUUID(),
 			startTime: Date.now(),
@@ -64,10 +67,11 @@ export class StateFile {
 	private ensureInstanceState(
 		port: number,
 		rawState: ServerStateData | null,
-	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime"> {
+	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime" | "pipePath"> {
 		if (rawState) {
 			return {
 				port: rawState.port,
+				pipePath: rawState.pipePath || this.pipePath,
 				pid: rawState.pid,
 				instanceId: rawState.instanceId,
 				startTime: rawState.startTime,

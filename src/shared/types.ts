@@ -112,8 +112,10 @@ export const StateUtils = {
 export interface ServerStateData {
 	/** State bit flags // CN: 状态位标志 */
 	state: number;
-	/** Port // CN: 端口 */
+	/** Port (MCP server) // CN: 端口 (MCP 服务器) */
 	port: number;
+	/** Named pipe path for ExtHost IPC // CN: 用于 ExtHost IPC 的命名管道路径 */
+	pipePath?: string;
 	/** Process ID // CN: 进程 ID */
 	pid: number;
 	/** Instance identifier // CN: 实例标识 */
@@ -122,6 +124,25 @@ export interface ServerStateData {
 	startTime: number;
 	/** Error message (optional) // CN: 错误信息(可选) */
 	errorMessage?: string;
+}
+
+const crypto = require("node:crypto");
+const path = require("node:path");
+
+/**
+ * Generate a safe IPC socket/pipe path
+ * // CN: 生成安全的 IPC socket 管道路径
+ */
+export function getIpcPath(storagePath: string): string {
+	if (process.platform === "win32") {
+		// EN: Windows needs named pipes format: \\.\pipe\<name>
+		// CN: Windows 需要命名管道格式: \\.\pipe\<name>
+		const hash = crypto.createHash("md5").update(storagePath).digest("hex");
+		return `\\\\.\\pipe\\vscode-lsp-mcp-${hash}`;
+	}
+	// EN: Unix uses domain sockets (files)
+	// CN: Unix 使用域套接字(文件)
+	return path.join(storagePath, "mcp-ipc.sock");
 }
 
 /** Location information // CN: 位置信息 */

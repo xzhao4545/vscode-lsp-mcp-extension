@@ -30,7 +30,7 @@ export function buildSearchFilesRegex(pattern: string): RegExp {
 export class SearchFilesTool extends BaseTool {
 	readonly name = "searchFiles";
 
-	async execute(args: Record<string, unknown>): Promise<SearchFilesResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<SearchFilesResult> {
 		const projectPath = args.projectPath as string;
 		const pattern = args.pattern as string;
 		const directory = args.directory as string | undefined;

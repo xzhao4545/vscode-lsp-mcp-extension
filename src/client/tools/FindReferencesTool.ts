@@ -27,7 +27,7 @@ interface FindReferencesResult {
 export class FindReferencesTool extends BaseTool {
 	readonly name = "findReferences";
 
-	async execute(args: Record<string, unknown>): Promise<FindReferencesResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<FindReferencesResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,

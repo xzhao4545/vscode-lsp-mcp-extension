@@ -5,40 +5,76 @@
 
 import { l10n } from "vscode";
 import * as vscode from "vscode";
-import WebSocket from "ws";
-import type { ServerMessage, TaskMessage } from "../shared/protocol";
+import * as net from "node:net";
+import {
+	createMessageConnection,
+	StreamMessageReader,
+	StreamMessageWriter,
+	type MessageConnection,
+} from "vscode-jsonrpc/node";
+import {
+	registerNotification,
+	registeredNotification,
+	taskRequest,
+	restartNotification,
+} from "../shared/protocol";
 
 export class ServerConnection {
-	private ws: WebSocket | null = null;
-	private onTaskCallback: ((task: TaskMessage) => Promise<unknown>) | null =
-		null;
+	private socket: net.Socket | null = null;
+	private connection: MessageConnection | null = null;
+	private onTaskCallback:
+		| ((tool: string, args: Record<string, unknown>, token: vscode.CancellationToken) => Promise<unknown>)
+		| null = null;
 	private onCloseCallback: (() => void) | null = null;
 
-	constructor(private port: number) {}
+	constructor(private pipePath: string) {}
 
 	/**
-	 * Connect to server - Establish WebSocket connection
+	 * Connect to server - Establish IPC JSON-RPC connection
 	 * // CN: 连接到服务器
 	 */
 	async connect(): Promise<void> {
 		return new Promise((resolve, reject) => {
-			this.ws = new WebSocket(`ws://localhost:${this.port}/ws`);
+			this.socket = net.createConnection(this.pipePath);
 
-			this.ws.on("open", () => {
+			this.socket.on("connect", () => {
+				this.setupJsonRpc();
 				this.register();
 				resolve();
 			});
 
-			this.ws.on("message", (data) => this.handleMessage(data.toString()));
-			this.ws.on("close", (code, reason) => {
-				console.log(`ws closed code:${code} reason:${reason}`);
+			this.socket.on("close", (hadError) => {
+				console.log(`IPC socket closed. hadError: ${hadError}`);
 				this.handleClose();
 			});
-			this.ws.on("error", (error) => {
+
+			this.socket.on("error", (error) => {
 				console.log(`error ${error.message}`);
-				reject();
+				reject(error);
 			});
 		});
+	}
+
+	private setupJsonRpc(): void {
+		if (!this.socket) { return; }
+
+		this.connection = createMessageConnection(
+			new StreamMessageReader(this.socket),
+			new StreamMessageWriter(this.socket),
+		);
+
+		this.connection.onNotification(registeredNotification, (params) => {
+			console.log(`[Connection] Registered as ${params.windowId}`);
+		});
+
+		this.connection.onRequest(taskRequest, async (params, token) => {
+			if (!this.onTaskCallback) {
+				throw new Error(l10n.t("No task callback registered"));
+			}
+			return await this.onTaskCallback(params.tool, params.args, token);
+		});
+
+		this.connection.listen();
 	}
 
 	/**
@@ -51,14 +87,17 @@ export class ServerConnection {
 				name: f.name,
 				path: f.uri.fsPath,
 			})) || [];
-		this.send({ type: "register", folders });
+		
+		this.connection?.sendNotification(registerNotification, { folders }).catch(console.error);
 	}
 
 	/**
 	 * Set task callback - Register callback for handling tasks from server
 	 * // CN: 设置任务回调
 	 */
-	onTask(callback: (task: TaskMessage) => Promise<unknown>): void {
+	onTask(
+		callback: (tool: string, args: Record<string, unknown>, token: vscode.CancellationToken) => Promise<unknown>,
+	): void {
 		this.onTaskCallback = callback;
 	}
 
@@ -71,61 +110,23 @@ export class ServerConnection {
 	}
 
 	/**
-	 * Handle message - Process incoming WebSocket messages
-	 * // CN: 处理消息
-	 */
-	private async handleMessage(data: string): Promise<void> {
-		try {
-			const msg = JSON.parse(data) as ServerMessage;
-			switch (msg.type) {
-				case "registered":
-					console.log(`[Connection] Registered as ${msg.windowId}`);
-					break;
-				case "task":
-					await this.executeTask(msg);
-					break;
-			}
-		} catch (err) {
-			console.error("[Connection] Failed to handle message:", err);
-		}
-	}
-
-	/**
-	 * Execute task - Run task received from server and send result
-	 * // CN: 执行任务
-	 */
-	private async executeTask(msg: TaskMessage): Promise<void> {
-		try {
-			if (!this.onTaskCallback) {
-				throw new Error(l10n.t("No task callback registered"));
-			}
-			const result = await this.onTaskCallback(msg);
-			this.send({ type: "result", requestId: msg.requestId, data: result });
-		} catch (error) {
-			this.send({
-				type: "error",
-				requestId: msg.requestId,
-				error: { message: (error as Error).stack },
-			});
-		}
-	}
-
-	/**
 	 * Handle close - Process WebSocket connection close
 	 * // CN: 连接关闭处理
 	 */
 	private handleClose(): void {
-		console.log("[Connection] WebSocket closed");
-		this.ws = null;
+		console.log("[Connection] IPC closed");
+		this.connection?.dispose();
+		this.connection = null;
+		this.socket?.destroy();
+		this.socket = null;
 		this.onCloseCallback?.();
 	}
 
 	/**
-	 * Send message - Send message to server via WebSocket
-	 * // CN: 发送消息
+	 * Send Restart request
 	 */
-	send(msg: unknown): void {
-		this.ws?.send(JSON.stringify(msg));
+	sendRestart(): void {
+		this.connection?.sendNotification(restartNotification).catch(console.error);
 	}
 
 	/**
@@ -133,6 +134,6 @@ export class ServerConnection {
 	 * // CN: 断开连接
 	 */
 	disconnect(): void {
-		this.ws?.close();
+		this.handleClose();
 	}
 }

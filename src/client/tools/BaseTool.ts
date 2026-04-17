@@ -24,7 +24,7 @@ export abstract class BaseTool {
 	 * execute - Execute the tool
 	 * // CN: 执行工具
 	 */
-	abstract execute(args: Record<string, unknown>): Promise<unknown>;
+	abstract execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<unknown>;
 
 	/**
 	 * format - Format result as Markdown
@@ -36,7 +36,7 @@ export abstract class BaseTool {
 	 * run - Execute and format
 	 * // CN: 执行并格式化
 	 */
-	async run(args: Record<string, unknown>): Promise<ToolResult> {
+	async run(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<ToolResult> {
 		const data = await this.execute(args);
 		const formatted = this.format(data, args);
 		return { data, formatted };

@@ -16,7 +16,7 @@ interface HoverResult {
 export class HoverTool extends BaseTool {
 	readonly name = "hover";
 
-	async execute(args: Record<string, unknown>): Promise<HoverResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<HoverResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,

@@ -28,7 +28,7 @@ interface GetFileStructResult {
 export class GetFileStructTool extends BaseTool {
 	readonly name = "getFileStruct";
 
-	async execute(args: Record<string, unknown>): Promise<GetFileStructResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<GetFileStructResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,

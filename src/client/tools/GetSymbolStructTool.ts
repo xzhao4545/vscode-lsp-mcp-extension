@@ -31,7 +31,7 @@ interface GetSymbolStructResult {
 export class GetSymbolStructTool extends BaseTool {
 	readonly name = "getSymbolStruct";
 
-	async execute(args: Record<string, unknown>): Promise<GetSymbolStructResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<GetSymbolStructResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,
