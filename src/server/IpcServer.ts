@@ -81,6 +81,8 @@ export class IpcServer {
 
 		connection.onError((err) => {
 			console.error(`[IPC Server] Error on ${windowId}:`, err);
+			connection.dispose();
+			this.clients.delete(connection);
 		});
 
 		connection.listen();

@@ -50,6 +50,7 @@ export class ServerConnection {
 
 			this.socket.on("error", (error) => {
 				console.log(`error ${error.message}`);
+				this.handleClose();
 				reject(error);
 			});
 		});

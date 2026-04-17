@@ -7,14 +7,14 @@ import * as assert from "node:assert";
 import sinon from "sinon";
 import { ClientRegistry } from "../../server/ClientRegistry";
 import type { Folder } from "../../shared/types";
-import WebSocket from "ws";
+import { type MessageConnection } from "vscode-jsonrpc/node";
 
 suite("ClientRegistry", function () {
 	suite("register()", function () {
 		test("adds window with folders", function () {
 			// EN: Test that register adds client to registry // CN: 测试 register 添加客户端到注册表
 			const registry = new ClientRegistry();
-			const ws = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 			const folders: Folder[] = [
 				{ name: "project1", path: "/workspace/project1" },
 				{ name: "project2", path: "/workspace/project2" },
@@ -32,8 +32,8 @@ suite("ClientRegistry", function () {
 		test("adds multiple windows", function () {
 			// EN: Test registering multiple windows // CN: 测试注册多个窗口
 			const registry = new ClientRegistry();
-			const ws1 = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
-			const ws2 = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws1 = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
+			const ws2 = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 
 			registry.register("window-1", ws1, [
 				{ name: "proj1", path: "/workspace/proj1" },
@@ -48,7 +48,7 @@ suite("ClientRegistry", function () {
 		test("normalizes folder paths on register", function () {
 			// EN: Test that paths are normalized // CN: 测试路径在注册时被标准化
 			const registry = new ClientRegistry();
-			const ws = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 			const folders: Folder[] = [
 				{ name: "proj", path: "/workspace/project/" }, // EN: trailing slash // CN: 尾部斜杠
 			];
@@ -65,7 +65,7 @@ suite("ClientRegistry", function () {
 		test("removes window", function () {
 			// EN: Test that unregister removes client // CN: 测试 unregister 删除客户端
 			const registry = new ClientRegistry();
-			const ws = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 
 			registry.register("window-1", ws, [
 				{ name: "proj", path: "/workspace/project" },
@@ -79,7 +79,7 @@ suite("ClientRegistry", function () {
 		test("removes project from index", function () {
 			// EN: Test that project index is cleaned up // CN: 测试项目索引被清理
 			const registry = new ClientRegistry();
-			const ws = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 
 			registry.register("window-1", ws, [
 				{ name: "proj", path: "/workspace/project" },
@@ -108,8 +108,8 @@ suite("ClientRegistry", function () {
 		test("returns correct client", function () {
 			// EN: Test finding client by project path // CN: 测试通过项目路径查找客户端
 			const registry = new ClientRegistry();
-			const ws1 = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
-			const ws2 = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws1 = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
+			const ws2 = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 
 			registry.register("window-1", ws1, [
 				{ name: "proj1", path: "/workspace/project1" },
@@ -130,7 +130,7 @@ suite("ClientRegistry", function () {
 		test("returns undefined for non-existent project", function () {
 			// EN: Test that non-existent project returns undefined // CN: 测试不存在的项目返回 undefined
 			const registry = new ClientRegistry();
-			const ws = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 
 			registry.register("window-1", ws, [
 				{ name: "proj", path: "/workspace/project" },
@@ -143,7 +143,7 @@ suite("ClientRegistry", function () {
 		test("handles nested paths", function () {
 			// EN: Test nested project paths // CN: 测试嵌套的项目路径
 			const registry = new ClientRegistry();
-			const ws = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 
 			registry.register("window-1", ws, [
 				{ name: "root", path: "/workspace" },
@@ -159,8 +159,8 @@ suite("ClientRegistry", function () {
 		test("returns all registered projects", function () {
 			// EN: Test that getAllProjects returns all projects // CN: 测试 getAllProjects 返回所有项目
 			const registry = new ClientRegistry();
-			const ws1 = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
-			const ws2 = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws1 = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
+			const ws2 = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 
 			registry.register("window-1", ws1, [
 				{ name: "proj1", path: "/workspace/project1" },
@@ -279,8 +279,8 @@ suite("ClientRegistry", function () {
 		test("returns all registered clients", function () {
 			// EN: Test getAllClients returns all clients // CN: 测试 getAllClients 返回所有客户端
 			const registry = new ClientRegistry();
-			const ws1 = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
-			const ws2 = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+			const ws1 = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
+			const ws2 = { dispose: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => Promise.resolve() } as unknown as MessageConnection;
 
 			registry.register("window-1", ws1, [
 				{ name: "proj", path: "/workspace/proj1" },
