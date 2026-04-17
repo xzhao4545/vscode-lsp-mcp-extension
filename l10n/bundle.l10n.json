@@ -19,5 +19,20 @@
   "Allow moving file from {0} to {1}?": "MCP client requests to move file from {0} to {1}. Allow?",
   "Allow deleting file {0}?": "MCP client requests to delete file {0}. Allow?",
   "Yes": "Yes",
-  "No": "No"
+  "No": "No",
+  "Connected to MCP server": "Connected to MCP server",
+  "Disconnected from server": "Disconnected from server",
+  "Attempting to reconnect...": "Attempting to reconnect...",
+  "Reconnect failed, please retry manually": "Reconnect failed, please retry manually",
+  "Server is restarting": "Server is restarting",
+  "Port {0} is already in use": "Port {0} is already in use",
+  "Server startup failed": "Server startup failed",
+  "Enter new port number": "Enter new port number",
+  "Port must be between 1024-65535": "Port must be between 1024-65535",
+  "Are you sure you want to restart MCP server? All connections will be disconnected.": "Are you sure you want to restart MCP server? All connections will be disconnected.",
+  "Retry": "Retry",
+  "Change port": "Change port",
+  "Cancel": "Cancel",
+  "Confirm": "Confirm",
+  "No task callback registered": "No task callback registered"
 }

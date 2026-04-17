@@ -1,5 +1,6 @@
 /**
- * WebSocket 服务器 - 管理与 VSCode 窗口的连接
+ * WebSocketServer - Manages connections with VSCode windows
+ * // CN: WebSocket 服务器 - 管理与 VSCode 窗口的连接
  */
 
 import * as crypto from "node:crypto";
@@ -75,7 +76,8 @@ export class WebSocketServer {
 	}
 
 	/**
-	 * 设置重启回调
+	 * Set restart callback
+	 * // CN: 设置重启回调
 	 */
 	onRestart(callback: () => void): void {
 		this.restartCallback = callback;
@@ -96,7 +98,8 @@ export class WebSocketServer {
 	}
 
 	/**
-	 * 处理重启请求
+	 * Handle restart request
+	 * // CN: 处理重启请求
 	 */
 	private handleRestart(): void {
 		if (this.closed) {
@@ -107,7 +110,8 @@ export class WebSocketServer {
 	}
 
 	/**
-	 * 广播消息给所有客户端
+	 * Broadcast message to all clients
+	 * // CN: 广播消息给所有客户端
 	 */
 	private broadcast(msg: unknown): void {
 		const data = JSON.stringify(msg);
