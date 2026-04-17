@@ -2,7 +2,7 @@
   "MCP Server: {0}": "MCP 服务器: {0}",
   "MCP Server is running": "MCP 服务器正在运行",
   "MCP Server is not connected": "MCP 服务器未连接",
-  "MCP Server running on port {0}": "MCP 服务器运行在端口 {0}",
+  "MCP Server is running on port: {0}": "MCP 服务器运行在端口: {0}",
   "Connected - Port {0}": "已连接 - 端口 {0}",
   "Disconnected - Click to reconnect": "未连接 - 点击重连",
   "Connecting...": "正在连接...",

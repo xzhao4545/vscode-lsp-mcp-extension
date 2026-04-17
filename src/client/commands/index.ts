@@ -39,9 +39,7 @@ export default function registerCommands(
 			const state = connectionManager.getState();
 			if (state === "connected") {
 				vscode.window.showInformationMessage(
-					l10n.t(
-						`MCP Server is running on port: ${connectionManager.getPort()}`,
-					),
+					l10n.t("MCP Server is running on port: {0}", connectionManager.getPort()),
 				);
 			} else {
 				vscode.window.showWarningMessage(l10n.t("MCP Server is not connected"));

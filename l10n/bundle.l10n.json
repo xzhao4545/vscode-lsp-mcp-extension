@@ -2,7 +2,7 @@
   "MCP Server: {0}": "MCP Server: {0}",
   "MCP Server is running": "MCP Server is running",
   "MCP Server is not connected": "MCP Server is not connected",
-  "MCP Server running on port {0}": "MCP Server running on port {0}",
+  "MCP Server is running on port: {0}": "MCP Server is running on port: {0}",
   "Connected - Port {0}": "Connected - Port {0}",
   "Disconnected - Click to reconnect": "Disconnected - Click to reconnect",
   "Connecting...": "Connecting...",
