@@ -4,7 +4,7 @@
  */
 
 import { deepStrictEqual, strictEqual, throws } from "node:assert";
-import sinon from "sinon";
+import sinon, { type SinonStub } from "sinon";
 import { TaskManager } from "../../server/TaskManager";
 import type { ClientInfo } from "../../server/ClientRegistry";
 import { DEFAULT_TIMEOUT } from "../../shared/constants";
@@ -15,13 +15,20 @@ import WebSocket from "ws";
  * // CN: 创建带有 stub WebSocket 的模拟 ClientInfo
  */
 function createMockClient(): ClientInfo {
-	const ws = sinon.createStubInstance(WebSocket) as unknown as WebSocket;
+	const wsStub = sinon.createStubInstance(WebSocket);
 	return {
-		ws,
+		ws: wsStub as unknown as WebSocket,
 		windowId: "test-window-1",
 		folders: [],
 		connectedAt: Date.now(),
 	};
+}
+
+/**
+ * Get the send stub from a ClientInfo's WebSocket
+ */
+function getSendStub(client: ClientInfo): SinonStub {
+	return client.ws.send as unknown as SinonStub;
 }
 
 suite("TaskManager", function () {
@@ -50,7 +57,8 @@ suite("TaskManager", function () {
 			const dispatchPromise = taskManager.dispatch(client, tool, args);
 
 			// EN: Extract the requestId from the WebSocket.send call // CN: 从 WebSocket.send 调用中提取 requestId
-			const sendCall = client.ws.send.getCall(0);
+			const sendStub = getSendStub(client);
+			const sendCall = sendStub.getCall(0);
 			const message = JSON.parse(sendCall.firstArg);
 			const { requestId } = message;
 
@@ -76,7 +84,8 @@ suite("TaskManager", function () {
 			const dispatchPromise = taskManager.dispatch(client, tool, args);
 
 			// EN: Extract requestId // CN: 提取 requestId
-			const sendCall = client.ws.send.getCall(0);
+			const sendStub = getSendStub(client);
+			const sendCall = sendStub.getCall(0);
 			const message = JSON.parse(sendCall.firstArg);
 			const { requestId } = message;
 
@@ -142,7 +151,8 @@ suite("TaskManager", function () {
 			const dispatchPromise = taskManager.dispatch(client, "tool", {});
 
 			// EN: Get requestId // CN: 获取 requestId
-			const sendCall = client.ws.send.getCall(0);
+			const sendStub = getSendStub(client);
+			const sendCall = sendStub.getCall(0);
 			const { requestId } = JSON.parse(sendCall.firstArg);
 
 			// EN: Handle result before timeout // CN: 在超时前处理结果
@@ -174,7 +184,8 @@ suite("TaskManager", function () {
 			);
 
 			// EN: Get requestId // CN: 获取 requestId
-			const sendCall = client.ws.send.getCall(0);
+			const sendStub = getSendStub(client);
+			const sendCall = sendStub.getCall(0);
 			const { requestId } = JSON.parse(sendCall.firstArg);
 
 			// EN: Handle result // CN: 处理结果
@@ -198,7 +209,8 @@ suite("TaskManager", function () {
 			const dispatchPromise = taskManager.dispatch(client, "tool", {});
 
 			// EN: Get requestId // CN: 获取 requestId
-			const sendCall = client.ws.send.getCall(0);
+			const sendStub = getSendStub(client);
+			const sendCall = sendStub.getCall(0);
 			const { requestId } = JSON.parse(sendCall.firstArg);
 
 			// EN: Handle error // CN: 处理错误
@@ -231,7 +243,8 @@ suite("TaskManager", function () {
 			);
 
 			// EN: Get requestId // CN: 获取 requestId
-			const sendCall = client.ws.send.getCall(0);
+			const sendStub = getSendStub(client);
+			const sendCall = sendStub.getCall(0);
 			const { requestId } = JSON.parse(sendCall.firstArg);
 
 			// EN: Handle error // CN: 处理错误
@@ -252,7 +265,8 @@ suite("TaskManager", function () {
 			const dispatchPromise = taskManager.dispatch(client, "tool", {});
 
 			// EN: Get requestId // CN: 获取 requestId
-			const sendCall = client.ws.send.getCall(0);
+			const sendStub = getSendStub(client);
+			const sendCall = sendStub.getCall(0);
 			const { requestId } = JSON.parse(sendCall.firstArg);
 
 			// EN: Handle error with empty message // CN: 处理空消息的错误
@@ -278,8 +292,9 @@ suite("TaskManager", function () {
 			const dispatchPromise2 = taskManager.dispatch(client, "tool2", {});
 
 			// EN: Get requestIds // CN: 获取 requestIds
-			const sendCall1 = client.ws.send.getCall(0);
-			const sendCall2 = client.ws.send.getCall(1);
+			const sendStub = getSendStub(client);
+			const sendCall1 = sendStub.getCall(0);
+			const sendCall2 = sendStub.getCall(1);
 
 			// EN: Cleanup // CN: 清理
 			taskManager.cleanup();
@@ -305,7 +320,8 @@ suite("TaskManager", function () {
 			taskManager.dispatch(client, "tool", {});
 
 			// EN: Get requestId to verify task was added // CN: 获取 requestId 以验证任务已添加
-			const sendCall = client.ws.send.getCall(0);
+			const sendStub = getSendStub(client);
+			const sendCall = sendStub.getCall(0);
 			const { requestId } = JSON.parse(sendCall.firstArg);
 
 			// EN: Cleanup // CN: 清理

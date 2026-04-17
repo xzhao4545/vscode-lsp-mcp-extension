@@ -21,7 +21,7 @@ suite("Protocol Types Test Suite", () => {
 	// ============ Client Messages (Window → Server) ============
 	// EN: 客户端消息 (窗口 → 服务器)
 
-	describe("RegisterMessage", () => {
+	suite("RegisterMessage", () => {
 		test("should serialize and deserialize correctly", () => {
 			const folders: Folder[] = [
 				{ name: "test-folder", path: "/path/to/test" },
@@ -60,7 +60,7 @@ suite("Protocol Types Test Suite", () => {
 		});
 	});
 
-	describe("ResultMessage", () => {
+	suite("ResultMessage", () => {
 		test("should serialize and deserialize with data structure", () => {
 			const data = { result: "success", items: [1, 2, 3] };
 			const msg: ResultMessage = {
@@ -128,7 +128,7 @@ suite("Protocol Types Test Suite", () => {
 		});
 	});
 
-	describe("ErrorMessage", () => {
+	suite("ErrorMessage", () => {
 		test("should serialize and deserialize error structure", () => {
 			const msg: ErrorMessage = {
 				type: "error",
@@ -170,7 +170,7 @@ suite("Protocol Types Test Suite", () => {
 		});
 	});
 
-	describe("RestartMessage", () => {
+	suite("RestartMessage", () => {
 		test("should serialize minimal restart message", () => {
 			const msg: RestartMessage = { type: "restart" };
 			const json = JSON.stringify(msg);
@@ -193,7 +193,7 @@ suite("Protocol Types Test Suite", () => {
 	// ============ Server Messages (Server → Window) ============
 	// EN: 服务器消息 (服务器 → 窗口)
 
-	describe("RegisteredMessage", () => {
+	suite("RegisteredMessage", () => {
 		test("should serialize and deserialize windowId", () => {
 			const msg: RegisteredMessage = {
 				type: "registered",
@@ -217,7 +217,7 @@ suite("Protocol Types Test Suite", () => {
 		});
 	});
 
-	describe("TaskMessage", () => {
+	suite("TaskMessage", () => {
 		test("should serialize and deserialize task fields", () => {
 			const msg: TaskMessage = {
 				type: "task",
@@ -277,7 +277,7 @@ suite("Protocol Types Test Suite", () => {
 	// ============ Union Types ============
 	// EN: 联合类型测试
 
-	describe("ClientMessage union", () => {
+	suite("ClientMessage union", () => {
 		test("should accept RegisterMessage", () => {
 			const msg: ClientMessage = {
 				type: "register",
@@ -324,7 +324,7 @@ suite("Protocol Types Test Suite", () => {
 		});
 	});
 
-	describe("ServerMessage union", () => {
+	suite("ServerMessage union", () => {
 		test("should accept RegisteredMessage", () => {
 			const msg: ServerMessage = {
 				type: "registered",
@@ -354,7 +354,7 @@ suite("Protocol Types Test Suite", () => {
 		});
 	});
 
-	describe("Message union (all types)", () => {
+	suite("Message union (all types)", () => {
 		test("should accept all client and server message types", () => {
 			const allMessages: Message[] = [
 				// Client messages
