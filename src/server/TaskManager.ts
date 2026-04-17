@@ -29,11 +29,13 @@ export class TaskManager {
 			}, timeout);
 		});
 
+		// TODO: [race] Promise.race does not abort the underlying sendRequest when timeout fires - the request continues in background // CN: Promise.race 不会在超时触发时中止底层 sendRequest，请求仍在后台继续
+		// TODO: [scope] CancellationToken is best-effort only - JSON-RPC request continues even after cancel() is called // CN: CancellationToken 仅提供尽力而为的取消机制 - 调用 cancel() 后 JSON-RPC 请求仍会继续执行
 		try {
 			console.log(
 				`[TaskManager] Dispatched ${tool} to ${client.windowId}`,
 			);
-			
+
 			// Send task in a Promise.race // CN: 在 Promise.race 中发送任务
 			const result = await Promise.race([
 				client.connection.sendRequest(

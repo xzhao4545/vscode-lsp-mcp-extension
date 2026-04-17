@@ -34,6 +34,8 @@ export class ClientRegistry {
 		});
 
 		// EN: Build projectPath index // CN: 建立 projectPath 索引
+		// TODO: [data] projectIndex silently overwrites entries for duplicate folder paths - no warning or error // CN: projectIndex 遇到重复路径时静默覆盖，没有任何警告或错误
+		// TODO: [logic] No validation that paths exist or are accessible during registration // CN: 注册时未验证路径是否存在或可访问
 		for (const folder of folders) {
 			this.projectIndex.set(folder.path, windowId);
 		}
