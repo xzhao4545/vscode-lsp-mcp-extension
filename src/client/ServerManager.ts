@@ -197,7 +197,8 @@ export class ServerManager {
 
 	/**
 	 * Wait for server ready - Poll until server is ready or timeout
-	 * // CN: 等待服务器就绪
+	 * // TODO: [scope] Busy-waits with 200ms polling interval for up to 5 seconds, creating CPU load.
+	 * Could use exponential backoff or event-based notification instead // CN: 占用 CPU 的忙等待，每 200ms 轮询，最多 5 秒。可以使用指数退避或基于事件的通知
 	 */
 	private async waitForServerReady(_port: number): Promise<number> {
 		const start = Date.now();

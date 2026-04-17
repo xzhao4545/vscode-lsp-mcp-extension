@@ -59,6 +59,8 @@ export class StateFileWatcher {
 				await this.onShouldShutdown();
 				return;
 			}
+			// TODO: [race] TOCTOU race - between reading state file and checking instanceId,
+			// another process could rewrite the state file, making this check unreliable // CN: TOCTOU 竞态条件 - 在读取状态文件和检查 instanceId 之间，另一个进程可能重写状态文件
 			if (
 				data.instanceId !== this.currentState.instanceId &&
 				StateUtils.isRunning(data.state)

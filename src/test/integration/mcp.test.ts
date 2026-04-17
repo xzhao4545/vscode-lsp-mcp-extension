@@ -43,22 +43,24 @@ suite("MCP Tools Test Suite", function () {
 	});
 
 	// ==================== 测试入口 ====================
+	// TODO: test 11/14 tools lack test data (only listOpenProjects, goToDefinition, searchSymbolInWorkspace have data files) // CN: 11/14工具缺少测试数据文件
+	// TODO: test getSymbolStruct test is registered but no test data file exists at src/test/testData/mcp/getSymbolStruct.json // CN: getSymbolStruct测试已注册但缺少测试数据文件
 
 	test("listOpenProjects", () => runToolTest(client, "listOpenProjects"));
 	test("goToDefinition", () => runToolTest(client, "goToDefinition"));
-	test("findReferences", () => runToolTest(client, "findReferences"));
-	test("hover", () => runToolTest(client, "hover"));
-	test("getFileStruct", () => runToolTest(client, "getFileStruct"));
+	test("findReferences", () => runToolTest(client, "findReferences")); // TODO: test Missing test data file // CN: 缺少测试数据文件
+	test("hover", () => runToolTest(client, "hover")); // TODO: test Missing test data file // CN: 缺少测试数据文件
+	test("getFileStruct", () => runToolTest(client, "getFileStruct")); // TODO: test Missing test data file // CN: 缺少测试数据文件
 	test("searchSymbolInWorkspace", () =>
 		runToolTest(client, "searchSymbolInWorkspace"));
-	test("goToImplementation", () => runToolTest(client, "goToImplementation"));
-	test("incomingCalls", () => runToolTest(client, "incomingCalls"));
-	test("renameSymbol", () => runToolTest(client, "renameSymbol"));
-	test("getDiagnostics", () => runToolTest(client, "getDiagnostics"));
-	test("getDefinitionText", () => runToolTest(client, "getDefinitionText"));
-	test("syncFiles", () => runToolTest(client, "syncFiles"));
-	test("searchFiles", () => runToolTest(client, "searchFiles"));
-	test("getScopeParent", () => runToolTest(client, "getScopeParent"));
+	test("goToImplementation", () => runToolTest(client, "goToImplementation")); // TODO: test Missing test data file // CN: 缺少测试数据文件
+	test("incomingCalls", () => runToolTest(client, "incomingCalls")); // TODO: test Missing test data file // CN: 缺少测试数据文件
+	test("renameSymbol", () => runToolTest(client, "renameSymbol")); // TODO: test Missing test data file // CN: 缺少测试数据文件
+	test("getDiagnostics", () => runToolTest(client, "getDiagnostics")); // TODO: test Missing test data file // CN: 缺少测试数据文件
+	test("getDefinitionText", () => runToolTest(client, "getDefinitionText")); // TODO: test Missing test data file // CN: 缺少测试数据文件
+	test("syncFiles", () => runToolTest(client, "syncFiles")); // TODO: test Missing test data file // CN: 缺少测试数据文件
+	test("searchFiles", () => runToolTest(client, "searchFiles")); // TODO: test Missing test data file // CN: 缺少测试数据文件
+	test("getScopeParent", () => runToolTest(client, "getScopeParent")); // TODO: test Missing test data file // CN: 缺少测试数据文件
 });
 
 /**
