@@ -58,3 +58,21 @@ l10n/
 2. Make changes with i18n compliance
 3. Push to your fork: `git push -u bramburn <branch>`
 4. Create PR to upstream `dev`: `gh pr create --repo xzhao4545/vscode-lsp-mcp-extension --head bramburn:<branch> --base dev`
+
+## Architecture Patterns
+
+### Protocol Pattern (src/shared/protocol.ts)
+
+Communication uses a strictly typed message structure. When adding a new type of communication (e.g., "Progress Update"):
+
+1. Define the interface in `src/shared/protocol.ts`
+2. Add it to the `ClientMessage` or `ServerMessage` union types
+3. Implement the handler in both `src/server/McpServer.ts` and `src/client/ServerConnection.ts`
+
+See `.claude/rules/claude-dev-patterns.md` for full details.
+
+### Adding Commands and Tools
+
+See `.claude/rules/claude-dev-patterns.md` for patterns on:
+- Adding new VSCode commands (package.json → registration)
+- Adding new MCP tools (MCPTools.ts schema → Tool class → TaskExecutor)

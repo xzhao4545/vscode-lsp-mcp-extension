@@ -147,6 +147,103 @@ Add any user-facing strings to `l10n/bundle.l10n.json` and `l10n/bundle.l10n.zh-
 
 ---
 
+## 3. Adding a New Protocol Message
+
+The app uses a strictly typed message structure in `src/shared/protocol.ts`.
+
+### Step 1: Define the message interface
+
+Open `src/shared/protocol.ts` and add a new interface:
+
+```typescript
+/** Progress update message // CN: 进度更新消息 */
+export interface ProgressUpdateMessage {
+  type: "progress";
+  requestId: string;
+  progress: number;
+  message?: string;
+}
+```
+
+### Step 2: Add to union types
+
+Add the new type to the appropriate union:
+
+```typescript
+// For messages Window → Server:
+export type ClientMessage =
+  | RegisterMessage
+  | ResultMessage
+  | ErrorMessage
+  | RestartMessage
+  | ProgressUpdateMessage;  // Add here
+
+// For messages Server → Window:
+export type ServerMessage =
+  | RegisteredMessage
+  | TaskMessage
+  | ProgressUpdateMessage;  // Add here
+```
+
+### Step 3: Implement handler in McpServer.ts
+
+Open `src/server/McpServer.ts`. If the message flows Server → Client, handle it in `handleMessage()`:
+
+```typescript
+private async handleMessage(data: string): Promise<void> {
+  try {
+    const msg = JSON.parse(data) as ServerMessage;
+    switch (msg.type) {
+      case "registered":
+        console.log(`[Connection] Registered as ${msg.windowId}`);
+        break;
+      case "task":
+        await this.executeTask(msg);
+        break;
+      case "progress":  // Add new case
+        // Handle progress update
+        break;
+    }
+  } catch (err) {
+    console.error("[Connection] Failed to handle message:", err);
+  }
+}
+```
+
+### Step 4: Implement handler in ServerConnection.ts
+
+Open `src/client/ServerConnection.ts`. Handle the message in the corresponding callback:
+
+```typescript
+private async handleMessage(data: string): Promise<void> {
+  try {
+    const msg = JSON.parse(data) as ServerMessage;
+    switch (msg.type) {
+      case "registered":
+        console.log(`[Connection] Registered as ${msg.windowId}`);
+        break;
+      case "task":
+        await this.executeTask(msg);
+        break;
+      case "progress":  // Add new case
+        // Handle progress update
+        break;
+    }
+  } catch (err) {
+    console.error("[Connection] Failed to handle message:", err);
+  }
+}
+```
+
+### Protocol Pattern Checklist
+
+- [ ] Define interface in `src/shared/protocol.ts`
+- [ ] Add to `ClientMessage` or `ServerMessage` union
+- [ ] Handle in `McpServer.ts` switch statement
+- [ ] Handle in `ServerConnection.ts` switch statement
+
+---
+
 ## File Locations
 
 | Purpose | File |
@@ -158,3 +255,4 @@ Add any user-facing strings to `l10n/bundle.l10n.json` and `l10n/bundle.l10n.zh-
 | Tool classes | `src/client/tools/*.ts` |
 | Tool registration | `src/client/TaskExecutor.ts` |
 | Runtime messages | `l10n/bundle.l10n.json`, `l10n/bundle.l10n.zh-cn.json` |
+| Protocol messages | `src/shared/protocol.ts` |

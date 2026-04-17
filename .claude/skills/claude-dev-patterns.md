@@ -23,8 +23,6 @@ context.subscriptions.push(
 );
 ```
 
----
-
 Add new tool to vscode-lsp-mcp-extension.
 
 ## Tool Pattern
@@ -33,5 +31,15 @@ Add new tool to vscode-lsp-mcp-extension.
 2. **src/client/tools/ToolNameTool.ts** - Create class extending `BaseTool`
 3. **src/client/TaskExecutor.ts** - Import and register in `registerTools()`
 4. Add any user-facing strings to l10n bundles
+
+---
+
+Add new protocol message to vscode-lsp-mcp-extension.
+
+## Protocol Pattern
+
+1. **src/shared/protocol.ts** - Define interface, add to `ClientMessage` or `ServerMessage` union
+2. **src/server/McpServer.ts** - Add case in `handleMessage()` switch
+3. **src/client/ServerConnection.ts** - Add case in `handleMessage()` switch
 
 See `.claude/rules/claude-dev-patterns.md` for full details.
