@@ -39,7 +39,7 @@ export class DebugLogItem extends vscode.TreeItem {
 		const md = new vscode.MarkdownString();
 		md.appendMarkdown(`**Tool**: ${this.entry.tool}\n\n`); // EN: 工具
 		md.appendMarkdown(`**Duration**: ${this.entry.duration}ms\n\n`); // EN: 耗时
-		md.appendMarkdown(`**Status**: ${entry.success ? "Success" : "Failed"}\n\n`); // EN: 状态
+		md.appendMarkdown(`**Status**: ${this.entry.success ? "Success" : "Failed"}\n\n`); // EN: 状态
 		md.appendMarkdown(
 			`**Args**: \`${JSON.stringify(this.entry.args).slice(0, 100)}...\``,
 		);
