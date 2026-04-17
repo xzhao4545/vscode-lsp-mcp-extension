@@ -19,6 +19,7 @@ export class McpServer {
 	/**
 	 * Store transport and server instance for each session
 	 * // CN: 存储每个 session 的 transport 和 server 实例
+	 * // TODO: data Session Map can grow unboundedly if transport.onclose never fires // CN: Session Map 可能因 transport.onclose 未触发而导致内存泄漏
 	 */
 	private sessions = new Map<
 		string,
@@ -85,6 +86,7 @@ export class McpServer {
 		tool: string,
 		args: Record<string, unknown>,
 	): Promise<unknown> {
+		// TODO: scope listOpenProjects is handled as special case instead of registered as regular tool // CN: listOpenProjects 作为特殊 case 处理，未注册为常规工具
 		if (tool === "listOpenProjects") {
 			return this.handleListOpenProjects(args);
 		}
