@@ -1,6 +1,6 @@
 /**
- * MCP 服务器 - HTTP/SSE 接口实现
- * 使用新的 McpServer + StreamableHTTPServerTransport API
+ * McpServer - HTTP/SSE interface implementation using new McpServer + StreamableHTTPServerTransport API
+ * // CN: MCP 服务器 - HTTP/SSE 接口实现，使用新的 McpServer + StreamableHTTPServerTransport API
  */
 
 import * as crypto from "node:crypto";
@@ -12,11 +12,14 @@ import { ClientRegistry } from "./ClientRegistry";
 import toolSCHEMAS, { type ToolName } from "./MCPTools";
 import type { TaskManager } from "./TaskManager";
 
-/** MCP 端点路径 */
+/** MCP endpoint path */ // CN: MCP 端点路径
 const MCP_ENDPOINT = "/mcp";
 
 export class McpServer {
-	/** 存储每个 session 的 transport 和 server 实例 */
+	/**
+	 * Store transport and server instance for each session
+	 * // CN: 存储每个 session 的 transport 和 server 实例
+	 */
 	private sessions = new Map<
 		string,
 		{
@@ -33,7 +36,8 @@ export class McpServer {
 	) {}
 
 	/**
-	 * 创建新的 MCP Server 实例并注册工具
+	 * Create new MCP Server instance and register tools
+	 * // CN: 创建新的 MCP Server 实例并注册工具
 	 */
 	private createMcpServer(): McpServerSDK {
 		const server = new McpServerSDK(
@@ -74,7 +78,8 @@ export class McpServer {
 	}
 
 	/**
-	 * 处理工具调用
+	 * Handle tool call
+	 * // CN: 处理工具调用
 	 */
 	async handleToolCall(
 		tool: string,
@@ -98,7 +103,8 @@ export class McpServer {
 	}
 
 	/**
-	 * 处理 listOpenProjects
+	 * Handle listOpenProjects
+	 * // CN: 处理 listOpenProjects
 	 */
 	private handleListOpenProjects(args: Record<string, unknown>): unknown {
 		const projects = this.registry.getAllProjects();
@@ -160,7 +166,8 @@ export class McpServer {
 	}
 
 	/**
-	 * 处理 HTTP 请求
+	 * Handle HTTP request
+	 * // CN: 处理 HTTP 请求
 	 */
 	async handleRequest(
 		req: http.IncomingMessage,
@@ -208,7 +215,8 @@ export class McpServer {
 	}
 
 	/**
-	 * 处理 MCP 请求 (Streamable HTTP)
+	 * Handle MCP request (Streamable HTTP)
+	 * // CN: 处理 MCP 请求 (Streamable HTTP)
 	 */
 	private async handleMcpRequest(
 		req: http.IncomingMessage,
@@ -242,7 +250,8 @@ export class McpServer {
 	}
 
 	/**
-	 * 关闭所有 session
+	 * Close all sessions
+	 * // CN: 关闭所有 session
 	 */
 	async close(): Promise<void> {
 		this.closing = true;

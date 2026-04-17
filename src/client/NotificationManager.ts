@@ -1,5 +1,6 @@
 /**
- * 通知管理器
+ * NotificationManager - Manages user notifications for connection and server events
+ * // CN: 通知管理器
  */
 
 import * as vscode from "vscode";
@@ -24,11 +25,13 @@ const NOTIFICATIONS: Record<string, NotificationConfig> = {
 export type NotificationKey = keyof typeof NOTIFICATIONS;
 
 /**
- * 通知管理器类
+ * NotificationManager class - Handles displaying notifications to the user
+ * // CN: 通知管理器类
  */
 export class NotificationManager {
 	/**
-	 * 显示通知
+	 * Show notification - Displays a notification message to the user
+	 * // CN: 显示通知
 	 */
 	show(key: NotificationKey, extra?: string): void {
 		const config = NOTIFICATIONS[key];
@@ -48,7 +51,8 @@ export class NotificationManager {
 	}
 
 	/**
-	 * 端口冲突时的交互式提示
+	 * Port conflict dialog - Interactive prompt when port is already in use
+	 * // CN: 端口冲突时的交互式提示
 	 */
 	async showPortConflictDialog(
 		port: number,
@@ -71,7 +75,8 @@ export class NotificationManager {
 	}
 
 	/**
-	 * 让用户输入新端口
+	 * Prompt for new port - Ask user to input a new port number
+	 * // CN: 让用户输入新端口
 	 */
 	async promptNewPort(currentPort: number): Promise<number | null> {
 		const input = await vscode.window.showInputBox({
@@ -90,7 +95,8 @@ export class NotificationManager {
 	}
 
 	/**
-	 * 确认重启服务器
+	 * Confirm restart - Ask user to confirm server restart
+	 * // CN: 确认重启服务器
 	 */
 	async confirmRestart(): Promise<boolean> {
 		const result = await vscode.window.showWarningMessage(
