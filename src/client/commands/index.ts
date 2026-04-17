@@ -19,7 +19,8 @@ const DEBUG_DETAIL_SCHEME = "ide-lsp-mcp-debug";
 const debugDetailContents = new Map<string, string>();
 
 /**
- * 注册命令
+ * Register commands
+ * // CN: 注册命令
  */
 export default function registerCommands(
 	context: vscode.ExtensionContext,
@@ -32,15 +33,13 @@ export default function registerCommands(
 		debugLogStore,
 		debugPanelProvider,
 	} = props;
-	// 显示状态
+	// EN: Show status // CN: 显示状态
 	context.subscriptions.push(
 		vscode.commands.registerCommand("ide-lsp-mcp.showStatus", () => {
 			const state = connectionManager.getState();
 			if (state === "connected") {
 				vscode.window.showInformationMessage(
-					l10n.t(
-						`MCP Server is running on port: ${connectionManager.getPort()}`,
-					),
+					l10n.t("MCP Server is running on port: {0}", connectionManager.getPort()),
 				);
 			} else {
 				vscode.window.showWarningMessage(l10n.t("MCP Server is not connected"));
@@ -48,11 +47,11 @@ export default function registerCommands(
 		}),
 	);
 
-	// 手动重连
+	// EN: Manual reconnect // CN: 手动重连
 	context.subscriptions.push(
 		vscode.commands.registerCommand("ide-lsp-mcp.reconnect", async () => {
 			try {
-				// 先尝试启动服务器
+				// EN: Try to start server first // CN: 先尝试启动服务器
 				const port = await serverManager.ensureServerRunning();
 				connectionManager.updatePort(port);
 				await connectionManager.manualReconnect();
@@ -64,7 +63,7 @@ export default function registerCommands(
 		}),
 	);
 
-	// 重启服务器
+	// EN: Restart server // CN: 重启服务器
 	context.subscriptions.push(
 		vscode.commands.registerCommand("ide-lsp-mcp.restartServer", async () => {
 			const confirmed = await notifications.confirmRestart();
@@ -73,13 +72,13 @@ export default function registerCommands(
 			}
 
 			try {
-				// 请求服务器重启
+				// EN: Request server restart // CN: 请求服务器重启
 				await connectionManager?.requestServerRestart();
 
-				// 等待一段时间后重新启动
+				// EN: Wait before restarting // CN: 等待一段时间后重新启动
 				await new Promise((resolve) => setTimeout(resolve, 2000));
 
-				// 强制重启服务器
+				// EN: Force restart server // CN: 强制重启服务器
 				const port = await serverManager.forceRestart();
 				connectionManager.updatePort(port);
 				await connectionManager.connect();
@@ -91,14 +90,14 @@ export default function registerCommands(
 		}),
 	);
 
-	// 注册调试面板
+	// EN: Register debug panel // CN: 注册调试面板
 	context.subscriptions.push(
 		vscode.window.registerTreeDataProvider(
 			"ideLspMcpDebug",
 			debugPanelProvider,
 		),
 	);
-	// 注册虚拟文档提供者 (只读)
+	// EN: Register virtual document provider (read-only) // CN: 注册虚拟文档提供者 (只读)
 	context.subscriptions.push(
 		vscode.workspace.registerTextDocumentContentProvider(DEBUG_DETAIL_SCHEME, {
 			provideTextDocumentContent(uri: vscode.Uri): string {
@@ -114,7 +113,7 @@ export default function registerCommands(
 		),
 	);
 
-	// 清空调试日志
+	// EN: Clear debug log // CN: 清空调试日志
 	context.subscriptions.push(
 		vscode.commands.registerCommand("ide-lsp-mcp.clearDebugLog", () => {
 			debugLogStore.clear();
@@ -122,7 +121,7 @@ export default function registerCommands(
 		}),
 	);
 
-	// 显示调试详情
+	// EN: Show debug detail // CN: 显示调试详情
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
 			"ide-lsp-mcp.showDebugDetail",
@@ -143,7 +142,8 @@ export default function registerCommands(
 }
 
 /**
- * 构建调试详情内容
+ * Build debug detail content
+ * // CN: 构建调试详情内容
  */
 function buildDebugDetailContent(entry: DebugLogEntry): string {
 	const time = new Date(entry.timestamp);
@@ -152,15 +152,15 @@ function buildDebugDetailContent(entry: DebugLogEntry): string {
 	try {
 		result = JSON.stringify(JSON.parse(entry.result), null, 2);
 	} catch {
-		/* keep original */
+		/* EN: Keep original // CN: 保持原样 */
 	}
-	return `# ${l10n.t("Input Parameters")}
+	return `# Input Parameters
 
-- **${l10n.t("Tool")}**: ${entry.tool}
-- **${l10n.t("Time")}**: ${timeStr}
-- **${l10n.t("Duration")}**: ${entry.duration}ms
-- **${l10n.t("Status")}**: ${
-		entry.success ? `✓ ${l10n.t("Success")}` : `✗ ${l10n.t("Failed")}`
+- **Tool**: ${entry.tool}
+- **Time**: ${timeStr}
+- **Duration**: ${entry.duration}ms
+- **Status**: ${
+		entry.success ? `✓ Success` : `✗ Failed`
 	}
 
 \`\`\`json
@@ -169,7 +169,7 @@ ${JSON.stringify(entry.args, null, 2)}
 
 ---
 
-# ${l10n.t("Output Result")}
+# Output Result
 
 ${result}
 `;

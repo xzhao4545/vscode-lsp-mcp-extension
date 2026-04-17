@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Add MemPalace memory palace configuration for semantic memory search
+
 ## [0.1.1] - 2026-04-06
 
 - 修复 `searchSymbolInWorkspace` 首次查询偶发空结果的问题：工具现在会自动预热并重试工作区符号索引

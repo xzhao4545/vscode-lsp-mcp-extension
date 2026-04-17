@@ -1,5 +1,6 @@
 /**
- * 任务管理器 - 任务分发与结果收集
+ * TaskManager - Task dispatch and result collection
+ * // CN: 任务管理器 - 任务分发与结果收集
  */
 
 import * as crypto from "node:crypto";
@@ -16,7 +17,8 @@ export class TaskManager {
 	private pending = new Map<string, PendingTask>();
 
 	/**
-	 * 分发任务到指定客户端
+	 * Dispatch task to specified client
+	 * // CN: 分发任务到指定客户端
 	 */
 	async dispatch(
 		client: ClientInfo,
@@ -27,7 +29,7 @@ export class TaskManager {
 		const requestId = crypto.randomUUID();
 
 		return new Promise((resolve, reject) => {
-			// 设置超时
+			// Set timeout // CN: 设置超时
 			const timeoutHandle = setTimeout(() => {
 				this.pending.delete(requestId);
 				reject(new Error(`Task timeout after ${timeout}ms`));
@@ -35,7 +37,7 @@ export class TaskManager {
 
 			this.pending.set(requestId, { resolve, reject, timeout: timeoutHandle });
 
-			// 发送任务
+			// Send task // CN: 发送任务
 			client.ws.send(
 				JSON.stringify({
 					type: "task",
@@ -52,7 +54,8 @@ export class TaskManager {
 	}
 
 	/**
-	 * 处理成功结果
+	 * Handle successful result
+	 * // CN: 处理成功结果
 	 */
 	handleResult(requestId: string, data: unknown): void {
 		const task = this.pending.get(requestId);
@@ -65,7 +68,8 @@ export class TaskManager {
 	}
 
 	/**
-	 * 处理错误
+	 * Handle error
+	 * // CN: 处理错误
 	 */
 	handleError(
 		requestId: string,
@@ -83,7 +87,8 @@ export class TaskManager {
 	}
 
 	/**
-	 * 清理所有待处理任务
+	 * Cleanup all pending tasks
+	 * // CN: 清理所有待处理任务
 	 */
 	cleanup(): void {
 		for (const [, task] of this.pending) {

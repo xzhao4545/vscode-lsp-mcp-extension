@@ -24,7 +24,8 @@ export function buildSearchFilesRegex(pattern: string): RegExp {
 }
 
 /**
- * SearchFiles - 搜索文件
+ * SearchFilesTool - Search files
+ * // CN: 搜索文件
  */
 export class SearchFilesTool extends BaseTool {
 	readonly name = "searchFiles";
