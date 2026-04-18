@@ -22,7 +22,8 @@ interface GoToImplementationResult {
 }
 
 /**
- * GoToImplementation - 查找实现
+ * GoToImplementationTool - Find implementations
+ * // CN: 查找实现
  */
 export class GoToImplementationTool extends BaseTool {
 	readonly name = "goToImplementation";
@@ -40,7 +41,7 @@ export class GoToImplementationTool extends BaseTool {
 		);
 		const symbolName = args.symbolName as string;
 
-		// 验证 symbol
+		// EN: Validate symbol // CN: 验证 symbol
 		const validation = await SymbolValidator.validate(
 			uri,
 			position,

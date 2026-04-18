@@ -10,20 +10,12 @@
 import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { McpTestClient, type TestCase } from "./McpTestClient";
+import { McpTestClient, type TestCase } from "../McpTestClient";
 
 // 配置
-const TEST_DATA_DIR = path.join(
-	__dirname,
-	"..",
-	"..",
-	"src",
-	"test",
-	"testData",
-	"mcp",
-);
+const TEST_DATA_DIR = path.join(__dirname, "..", "..", "testData", "mcp");
 const EXPECTED_DIR = path.join(TEST_DATA_DIR, "expected");
-const PROJECT_PATH_PLACEHOLDER = "${" + "projectPath}";
+const PROJECT_PATH_PLACEHOLDER = "${projectPath}";
 
 // 测试项目路径 - 需要根据实际情况修改
 const PROJECT_PATH =
