@@ -72,6 +72,18 @@
 			"type": "npm",
 			"script": "compile",
 			"group": "build"
+		},
+		{
+			"label": "server:build",
+			"type": "npm",
+			"script": "server:build",
+			"group": "build"
+		},
+		{
+			"label": "server:dev",
+			"type": "npm",
+			"script": "server:dev",
+			"group": "build"
 		}
 	]
 }
