@@ -1,11 +1,13 @@
 /**
- * IpcServer - Manages IPC connections with VSCode windows using Domain Sockets (Named Pipes)
- * // CN: IPC 服务器 - 使用域套接字(命名管道)管理与 VSCode 窗口的连接
+ * StdioChannel - Manages IPC with VSCode extension via stdin/stdout
+ * // CN: StdioChannel - 通过 stdin/stdout 与 VSCode 扩展进行 IPC 通信
+ *
+ * This class replaces the old IpcServer which used Unix domain sockets.
+ * Communication now flows over stdio pipes instead of a socket file path.
+ * // CN: 此类替换旧的 IpcServer，后者使用 Unix 域套接字。现在通过 stdio 管道而不是套接字文件路径进行通信。
  */
 
 import * as crypto from "node:crypto";
-import * as fs from "node:fs";
-import * as net from "node:net";
 import {
 	createMessageConnection,
 	StreamMessageReader,
@@ -17,117 +19,121 @@ import type { ClientRegistry } from "./ClientRegistry";
 import type { ShutdownManager } from "./ShutdownManager";
 import type { TaskManager } from "./TaskManager";
 
-export class IpcServer {
-	private server: net.Server;
+/**
+ * StdioChannel - Single stdio connection between server and extension
+ * // CN: StdioChannel - 服务器和扩展之间的单个 stdio 连接
+ */
+export class StdioChannel {
+	private connection: MessageConnection | null = null;
 	private restartCallback: (() => void) | null = null;
 	private closed = false;
-	private clients = new Set<MessageConnection>();
+	private windowId: string;
 
 	constructor(
 		private registry: ClientRegistry,
 		private taskManager: TaskManager,
 		private shutdownManager: ShutdownManager,
 	) {
-		this.server = net.createServer((socket) => this.handleConnection(socket));
+		// EN: Generate window ID for this connection // CN: 为此连接生成窗口 ID
+		this.windowId = `win-${crypto.randomUUID().slice(0, 8)}`;
 
-		this.server.on("error", (err) => {
-			console.error(`[IPC Server] Error:`, err);
-		});
+		// EN: Create MessageConnection wrapping stdin/stdout // CN: 创建包装 stdin/stdout 的 MessageConnection
+		this.connection = createMessageConnection(
+			new StreamMessageReader(process.stdin),
+			new StreamMessageWriter(process.stdout),
+		);
 
-		// TODO: [logic] onClientDisconnected() called in constructor before any client connects - should be called when client actually disconnects // CN: onClientDisconnected() 在构造函数中调用，但此时还没有任何客户端连接
-		this.shutdownManager.onClientDisconnected();
+		// EN: Register protocol handlers // CN: 注册协议处理程序
+		this.setupHandlers();
 	}
 
 	/**
-	 * Listen on the IPC path
-	 * // CN: 在 IPC 路径上监听
+	 * Setup protocol handlers for the stdio connection
+	 * // CN: 设置 stdio 连接的协议处理程序
 	 */
-	listen(pipePath: string, callback?: () => void): void {
-		try {
-			if (!pipePath.startsWith("\\\\.\\pipe\\") && fs.existsSync(pipePath)) {
-				fs.unlinkSync(pipePath);
-			}
-		} catch (err) {
-			console.error(`[IPC Server] Failed to unlink stale socket:`, err);
+	private setupHandlers(): void {
+		if (!this.connection) {
+			return;
 		}
 
-		this.server.listen(pipePath, () => {
-			console.log(`[IPC Server] Listening on ${pipePath}`);
-			if (callback) {
-				callback();
+		// EN: Handle workspace registration // CN: 处理工作区注册
+		this.connection.onNotification(registerNotification, (params) => {
+			if (!this.connection) {
+				return;
 			}
-		});
-	}
-
-	// TODO: [race] 'closed' flag checked in handleRestart() (line 135) but NOT in handleConnection() - new connections could be accepted after close // CN: 'closed' 标志在 handleRestart() 中检查，但在 handleConnection() 中未检查
-	private handleConnection(socket: net.Socket): void {
-		const windowId = `win-${crypto.randomUUID().slice(0, 8)}`;
-		console.log(`[IPC Server] New connection: ${windowId}`);
-
-		const connection = createMessageConnection(
-			new StreamMessageReader(socket),
-			new StreamMessageWriter(socket),
-		);
-
-		this.clients.add(connection);
-
-		// Handle registration
-		connection.onNotification(registerNotification, (params) => {
-			this.registry.register(windowId, connection, params.folders);
+			// EN: Register this client with the registry // CN: 向注册表注册此客户端
+			this.registry.register(this.windowId, this.connection, params.folders);
 			this.shutdownManager.onClientConnected();
-			connection.sendNotification(registeredNotification, { windowId }).catch(console.error);
+			// EN: Send registered confirmation // CN: 发送注册确认
+			this.connection.sendNotification(registeredNotification, { windowId: this.windowId }).catch(console.error);
 		});
 
-		// Handle restart requests
-		connection.onNotification(restartNotification, () => {
+		// EN: Handle restart requests // CN: 处理重启请求
+		this.connection.onNotification(restartNotification, () => {
 			this.handleRestart();
 		});
 
-		connection.onClose(() => {
-			console.log(`[IPC Server] Connection closed: ${windowId}`);
-			this.registry.unregister(windowId);
+		// EN: Handle connection close // CN: 处理连接关闭
+		this.connection.onClose(() => {
+			console.log(`[StdioChannel] Connection closed: ${this.windowId}`);
+			this.registry.unregister(this.windowId);
 			this.shutdownManager.onClientDisconnected();
-			this.clients.delete(connection);
 		});
 
-		// TODO: [race] clients.delete() called in both onClose (line 88) and onError (line 94) - potential double-delete if both handlers fire // CN: clients.delete() 在 onClose 和 onError 中都被调用，可能导致双重删除
-		connection.onError((err) => {
-			console.error(`[IPC Server] Error on ${windowId}:`, err);
-			connection.dispose();
-			this.clients.delete(connection);
+		// EN: Handle connection errors // CN: 处理连接错误
+		this.connection.onError((err) => {
+			console.error(`[StdioChannel] Error on ${this.windowId}:`, err);
+			this.connection?.dispose();
 		});
-
-		connection.listen();
 	}
 
 	/**
-	 * Set restart callback
-	 * // CN: 设置重启回调
+	 * Start listening on stdin/stdout
+	 * // CN: 开始监听 stdin/stdout
+	 *
+	 * Note: pipePath argument is kept for backward compatibility but ignored
+	 * // CN: 注意：保留 pipePath 参数以保持向后兼容，但会被忽略
+	 */
+	listen(_pipePath?: string, callback?: () => void): void {
+		if (!this.connection) {
+			console.error("[StdioChannel] No connection to listen on");
+			return;
+		}
+
+		console.log("[StdioChannel] Listening on stdin/stdout");
+
+		// EN: Start the JSON-RPC message loop // CN: 启动 JSON-RPC 消息循环
+		this.connection.listen();
+
+		// EN: Invoke callback when ready // CN: 就绪时调用回调
+		if (callback) {
+			callback();
+		}
+	}
+
+	/**
+	 * Set restart callback - Called when restart is requested
+	 * // CN: 设置重启回调 - 当收到重启请求时调用
 	 */
 	onRestart(callback: () => void): void {
 		this.restartCallback = callback;
 	}
 
+	/**
+	 * Close the stdio connection
+	 * // CN: 关闭 stdio 连接
+	 */
 	async close(): Promise<void> {
 		if (this.closed) {
 			return;
 		}
 		this.closed = true;
 
-		// Close all active connections
-		for (const client of this.clients) {
-			client.dispose();
-		}
-		this.clients.clear();
+		// EN: Dispose the JSON-RPC connection // CN: 释放 JSON-RPC 连接
+		this.connection?.dispose();
+		this.connection = null;
 
-		await new Promise<void>((resolve, reject) => {
-			this.server.close((err) => {
-				if (err && (err as any).code !== "ERR_SERVER_NOT_RUNNING") {
-					console.error("[IPC Server] Error closing server:", err);
-				}
-				resolve();
-			});
-		});
+		console.log("[StdioChannel] Closed");
 	}
 
 	/**
@@ -138,7 +144,13 @@ export class IpcServer {
 		if (this.closed) {
 			return;
 		}
-		// In a full implementation, you can broadcast `restartingNotification` here to all clients
+		// EN: Trigger the restart callback // CN: 触发重启回调
 		this.restartCallback?.();
 	}
 }
+
+/**
+ * @deprecated Alias for backward compatibility
+ * // CN: 已弃用 - 为保持向后兼容的别名
+ */
+export const IpcServer = StdioChannel;

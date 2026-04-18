@@ -9,6 +9,7 @@ import type { StateFile } from "../shared/stateFile";
 import type { DebugLogEntry } from "../shared/types";
 import { StateUtils } from "../shared/types";
 import Config from "./Config";
+import type { ServerManager } from "./ServerManager";
 import type { DebugLogStore } from "./debug/DebugLogStore";
 import type { NotificationManager } from "./NotificationManager";
 import { ServerConnection } from "./ServerConnection";
@@ -51,6 +52,8 @@ export class ConnectionManager {
 	private isReconnecting: boolean = false;
 	private shouldStop: boolean = false;
 	private debugLogStore: DebugLogStore | null = null;
+	// EN: Server manager reference for accessing stdio streams // CN: 服务器管理器引用，用于访问 stdio 流
+	private serverManager: ServerManager | null = null;
 
 	constructor(
 		private stateFile: StateFile,
@@ -61,6 +64,14 @@ export class ConnectionManager {
 	) {
 		this.port = initialPort;
 		this.debugLogStore = debugLogStore || null;
+	}
+
+	/**
+	 * Set server manager - For accessing stdio streams from child process
+	 * // CN: 设置服务器管理器 - 用于访问子进程的 stdio 流
+	 */
+	setServerManager(manager: ServerManager): void {
+		this.serverManager = manager;
 	}
 
 	/**
@@ -116,11 +127,17 @@ export class ConnectionManager {
 		this.setState("connecting");
 
 		try {
-            const state = await this.stateFile.read();
-            if (!state || !state.pipePath) {
-                throw new Error("pipePath not available in server state file");
-            }
-			this.connection = new ServerConnection(state.pipePath);
+			// EN: Get stdio streams from server process // CN: 从服务器进程获取 stdio 流
+			if (!this.serverManager) {
+				throw new Error("Server manager not set");
+			}
+			const serverProcess = this.serverManager.getServerProcess();
+			if (!serverProcess || !serverProcess.stdin || !serverProcess.stdout) {
+				throw new Error("Server process not available with stdio streams");
+			}
+
+			// EN: Create stdio-based connection // CN: 创建基于 stdio 的连接
+			this.connection = new ServerConnection(serverProcess.stdin, serverProcess.stdout);
 			await this.connection.connect();
 			this.connection.onTask(this.wrapTaskCallback());
 			this.setState("connected");

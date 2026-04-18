@@ -8,13 +8,13 @@ import {
 } from "../shared/constants";
 import { FileLock, isProcessAlive } from "../shared/fileLock";
 import { StateFile } from "../shared/stateFile";
-import { type ServerStateData, StateUtils, getIpcPath } from "../shared/types";
+import { type ServerStateData, StateUtils } from "../shared/types";
 import { ClientRegistry } from "./ClientRegistry";
 import { McpServer } from "./McpServer";
 import { ShutdownManager } from "./ShutdownManager";
 import { StateFileWatcher } from "./StateFileWatcher";
 import { TaskManager } from "./TaskManager";
-import { IpcServer } from "./IpcServer";
+import { StdioChannel } from "./IpcServer";
 
 function parseArgs(): {
 	port: number;
@@ -62,7 +62,7 @@ const stateFile = new StateFile(storagePath);
 const fileLock = new FileLock(lockPath);
 
 let httpServer: http.Server | null = null;
-let ipcServer: IpcServer | null = null;
+let ipcServer: StdioChannel | null = null;
 let stateFileWatcher: StateFileWatcher | null = null;
 let taskManager: TaskManager | null = null;
 let mcpServer: McpServer | null = null;
@@ -138,7 +138,7 @@ async function startServer(): Promise<void> {
 		throw new Error("Shutdown manager not initialized");
 	}
 
-	ipcServer = new IpcServer(
+	ipcServer = new StdioChannel(
 		registry,
 		taskMgr,
 		idleShutdownManager,
@@ -153,9 +153,9 @@ async function startServer(): Promise<void> {
 		throw new Error("HTTP server not initialized");
 	}
 
-	// Start the IPC server independently from HTTP port
-	const ipcPath = currentState?.pipePath || getIpcPath(storagePath);
-	ipcServer.listen(ipcPath);
+	// Start the stdio channel for IPC with extension
+	ipcServer.listen();
+	
 
 	await new Promise<void>((resolve, reject) => {
 		server.once("error", (err: NodeJS.ErrnoException) => {

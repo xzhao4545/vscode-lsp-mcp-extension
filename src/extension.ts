@@ -48,6 +48,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		0, // EN: Port to be determined // CN: 端口待确定
 		debugLogStore,
 	);
+	// EN: Set server manager for stdio stream access // CN: 设置服务器管理器以访问 stdio 流
+	connectionManager.setServerManager(serverManager);
 	// EN: Listen for connection state changes // CN: 监听连接状态变化
 	connectionManager.onStateChange((state, port) => {
 		updateStatusBar(state, port);
