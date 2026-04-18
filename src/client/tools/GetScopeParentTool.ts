@@ -15,12 +15,13 @@ interface GetScopeParentResult {
 }
 
 /**
- * GetScopeParent - 查找父级符号
+ * GetScopeParentTool - Find parent symbol
+ * // CN: 查找父级符号
  */
 export class GetScopeParentTool extends BaseTool {
 	readonly name = "getScopeParent";
 
-	async execute(args: Record<string, unknown>): Promise<GetScopeParentResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<GetScopeParentResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,

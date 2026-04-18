@@ -25,12 +25,13 @@ interface GetSymbolStructResult {
 }
 
 /**
- * GetSymbolStruct - 获取指定符号的结构
+ * GetSymbolStructTool - Get structure of specified symbol
+ * // CN: 获取指定符号的结构
  */
 export class GetSymbolStructTool extends BaseTool {
 	readonly name = "getSymbolStruct";
 
-	async execute(args: Record<string, unknown>): Promise<GetSymbolStructResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<GetSymbolStructResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,
@@ -40,10 +41,10 @@ export class GetSymbolStructTool extends BaseTool {
 			args.character as number,
 		);
 		const symbolName = args.symbolName as string;
-		const maxDepth = (args.maxDepth as number) ?? -1; // 默认 auto (-1)
+		const maxDepth = (args.maxDepth as number) ?? -1; // EN: Default auto (-1) // CN: 默认 auto (-1)
 		const maxLines = Config.getMaxStructLines();
 
-		// 验证 symbol
+		// EN: Validate symbol // CN: 验证 symbol
 		const validation = await SymbolValidator.validate(
 			uri,
 			position,
@@ -58,14 +59,14 @@ export class GetSymbolStructTool extends BaseTool {
 			};
 		}
 
-		// 获取文件中的所有符号
+		// EN: Get all symbols in file // CN: 获取文件中的所有符号
 		const symbols = await getDocumentSymbolsWithWarmup(uri);
 
 		if (!symbols || symbols.length === 0) {
 			return { symbol: undefined, hasCollapsed: false };
 		}
 
-		// 查找包含指定位置的符号
+		// EN: Find symbol at specified position // CN: 查找包含指定位置的符号
 		const targetSymbol = this.findSymbolAtPosition(symbols, position);
 
 		if (!targetSymbol) {
@@ -88,22 +89,23 @@ export class GetSymbolStructTool extends BaseTool {
 
 		const mappedSymbol = mapSymbol(targetSymbol);
 
-		// 计算符号的最大深度
+		// EN: Calculate max depth of symbol // CN: 计算符号的最大深度
 		const fullMaxDepth = this.calculateMaxDepth(mappedSymbol);
 
 		if (maxDepth < 0) {
-			// Auto 模式
+			// EN: Auto mode // CN: Auto 模式
 			const result = this.autoAdjustDepth(mappedSymbol, fullMaxDepth, maxLines);
 			return result;
 		} else {
-			// 固定深度模式
+			// EN: Fixed depth mode // CN: 固定深度模式
 			const result = this.applyFixedDepth(mappedSymbol, maxDepth);
 			return result;
 		}
 	}
 
 	/**
-	 * 查找包含指定位置的符号（找最小的包含符号）
+	 * findSymbolAtPosition - Find symbol at specified position (find smallest containing symbol)
+	 * // CN: 查找包含指定位置的符号（找最小的包含符号）
 	 */
 	private findSymbolAtPosition(
 		symbols: vscode.DocumentSymbol[],
@@ -114,7 +116,7 @@ export class GetSymbolStructTool extends BaseTool {
 				symbol.range.start.line <= position.line &&
 				symbol.range.end.line >= position.line
 			) {
-				// 先在子符号中查找更精确的匹配
+				// EN: First find more precise match in child symbols // CN: 先在子符号中查找更精确的匹配
 				const childMatch = this.findSymbolAtPosition(
 					symbol.children || [],
 					position,
@@ -129,7 +131,8 @@ export class GetSymbolStructTool extends BaseTool {
 	}
 
 	/**
-	 * 计算符号树的最大深度
+	 * calculateMaxDepth - Calculate max depth of symbol tree
+	 * // CN: 计算符号树的最大深度
 	 */
 	private calculateMaxDepth(symbol: SymbolInfo): number {
 		return this.getSymbolDepth(symbol, 1);
@@ -150,7 +153,8 @@ export class GetSymbolStructTool extends BaseTool {
 	}
 
 	/**
-	 * Auto 模式：自动调整深度以满足 maxLines 限制
+	 * autoAdjustDepth - Auto mode: automatically adjust depth to meet maxLines limit
+	 * // CN: Auto 模式：自动调整深度以满足 maxLines 限制
 	 */
 	private autoAdjustDepth(
 		symbol: SymbolInfo,
@@ -170,7 +174,8 @@ export class GetSymbolStructTool extends BaseTool {
 	}
 
 	/**
-	 * 应用指定深度，超出深度的节点标记为 collapsed
+	 * applyDepthWithCollapse - Apply target depth, nodes exceeding depth are marked as collapsed
+	 * // CN: 应用指定深度，超出深度的节点标记为 collapsed
 	 */
 	private applyDepthWithCollapse(
 		symbol: SymbolInfo,
@@ -214,7 +219,8 @@ export class GetSymbolStructTool extends BaseTool {
 	}
 
 	/**
-	 * 固定深度模式
+	 * applyFixedDepth - Fixed depth mode
+	 * // CN: 固定深度模式
 	 */
 	private applyFixedDepth(
 		symbol: SymbolInfo,
@@ -231,7 +237,8 @@ export class GetSymbolStructTool extends BaseTool {
 	}
 
 	/**
-	 * 检查是否存在折叠节点
+	 * checkHasCollapsed - Check if any collapsed nodes exist
+	 * // CN: 检查是否存在折叠节点
 	 */
 	private checkHasCollapsed(symbols: SymbolInfo[]): boolean {
 		for (const symbol of symbols) {
@@ -246,7 +253,8 @@ export class GetSymbolStructTool extends BaseTool {
 	}
 
 	/**
-	 * 计算输出行数
+	 * countOutputLines - Calculate output line count
+	 * // CN: 计算输出行数
 	 */
 	private countOutputLines(symbol: SymbolInfo | undefined): number {
 		if (!symbol) {

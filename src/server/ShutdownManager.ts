@@ -1,5 +1,6 @@
 /**
- * 关闭管理器 - 服务器自动关闭逻辑
+ * ShutdownManager - Server automatic shutdown logic
+ * // CN: 关闭管理器 - 服务器自动关闭逻辑
  */
 
 import { SHUTDOWN_DELAY } from "../shared/constants";
@@ -14,7 +15,8 @@ export class ShutdownManager {
 	) {}
 
 	/**
-	 * 客户端断开连接时调用
+	 * Called when client disconnects
+	 * // CN: 客户端断开连接时调用
 	 */
 	onClientDisconnected(): void {
 		if (this.registry.size === 0) {
@@ -23,7 +25,8 @@ export class ShutdownManager {
 	}
 
 	/**
-	 * 客户端连接时调用
+	 * Called when client connects
+	 * // CN: 客户端连接时调用
 	 */
 	onClientConnected(): void {
 		this.cancelShutdown();
@@ -34,7 +37,8 @@ export class ShutdownManager {
 	}
 
 	/**
-	 * 计划关闭
+	 * Schedule shutdown
+	 * // CN: 计划关闭
 	 */
 	private scheduleShutdown(): void {
 		if (this.shutdownTimer) {
@@ -54,7 +58,8 @@ export class ShutdownManager {
 	}
 
 	/**
-	 * 取消关闭
+	 * Cancel shutdown
+	 * // CN: 取消关闭
 	 */
 	private cancelShutdown(): void {
 		if (this.shutdownTimer) {

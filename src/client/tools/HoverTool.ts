@@ -10,12 +10,13 @@ interface HoverResult {
 }
 
 /**
- * Hover - 悬停信息
+ * HoverTool - Hover information
+ * // CN: 悬停信息
  */
 export class HoverTool extends BaseTool {
 	readonly name = "hover";
 
-	async execute(args: Record<string, unknown>): Promise<HoverResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<HoverResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,
@@ -26,7 +27,7 @@ export class HoverTool extends BaseTool {
 		);
 		const symbolName = args.symbolName as string;
 
-		// 验证 symbol
+		// EN: Validate symbol // CN: 验证 symbol
 		const validation = await SymbolValidator.validate(
 			uri,
 			position,

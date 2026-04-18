@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: Replaced WebSocket with `vscode-jsonrpc` over Named Pipes (IPC)
+  - Renamed `WebSocketServer.ts` → `IpcServer.ts`
+  - Communication now uses `vscode-jsonrpc` `NotificationType`/`RequestType` instead of raw JSON messages
+  - Named Pipes eliminate port collision issues with the MCP HTTP server
+- Updated `protocol.ts` to use `vscode-jsonrpc` notification/request types
+
+### Added
+
+- `src/server/IpcServer.ts` - IPC server using `vscode-jsonrpc` over domain sockets
+- `getIpcPath()` in `src/shared/types.ts` - generates platform-appropriate IPC pipe path
+
+### Removed
+
+- `src/server/WebSocketServer.ts` - replaced by `IpcServer.ts`
+
+### Documentation
+
+- Updated CLAUDE.md Protocol Pattern section to reflect `vscode-jsonrpc` architecture
+
+## [0.1.1] - 2026-04-06
+
 ## [0.1.1] - 2026-04-06
 
 - 修复 `searchSymbolInWorkspace` 首次查询偶发空结果的问题：工具现在会自动预热并重试工作区符号索引

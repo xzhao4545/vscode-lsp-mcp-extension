@@ -1,5 +1,6 @@
 /**
- * 服务器管理器 - 管理服务器生命周期
+ * ServerManager - Manages server lifecycle and process spawning
+ * // CN: 服务器管理器 - 管理服务器生命周期
  */
 
 import { spawn } from "node:child_process";
@@ -18,7 +19,8 @@ import config from "./Config";
 import type { NotificationManager } from "./NotificationManager";
 
 /**
- * 等待指定时间
+ * Sleep - Wait for specified duration
+ * // CN: 等待指定时间
  */
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,6 +31,8 @@ export class ServerManager {
 	private serverScript: string;
 	private storagePath: string;
 	private lockPath: string;
+	// EN: Stores the server child process for IPC access (stdin/stdout) // CN: 存储服务器子进程以供 IPC 访问（stdin/stdout）
+	private serverProcess: import("node:child_process").ChildProcess | null = null;
 
 	constructor(
 		context: vscode.ExtensionContext,
@@ -46,17 +50,19 @@ export class ServerManager {
 	}
 
 	/**
-	 * 获取状态文件实例
+	 * Get state file instance - Return the state file manager
+	 * // CN: 获取状态文件实例
 	 */
 	getStateFile(): StateFile {
 		return this.stateFile;
 	}
 
 	/**
-	 * 确保服务器运行
+	 * Ensure server running - Ensure server is running and return its port
+	 * // CN: 确保服务器运行
 	 */
 	async ensureServerRunning(): Promise<number> {
-		// 检查环境变量是否禁用自动启动
+		// EN: Check if auto-start is disabled via environment variable // CN: 检查环境变量是否禁用自动启动
 		if (
 			process.env[ENV_DISABLE_AUTO_START] === "true" ||
 			!config.getAutoStart()
@@ -72,32 +78,33 @@ export class ServerManager {
 			}
 			throw new Error("Server not running and auto-start is disabled");
 		}
-		// 读取状态文件
+		// EN: Read state file // CN: 读取状态文件
 		const data = await this.stateFile.read();
 		if (data) {
-			// 服务器已就绪，尝试连接
+			// EN: Server is ready, try to connect // CN: 服务器已就绪，尝试连接
 			if (StateUtils.isReady(data.state)) {
 				if (await this.isServerAlive(data.port)) {
 					console.log(`[ServerManager] Server running on port ${data.port}`);
 					return data.port;
 				}
-				// 服务器不响应，尝试启动
+				// EN: Server not responding, try to start // CN: 服务器不响应，尝试启动
 			}
-			// 服务器正在启动，等待就绪
+			// EN: Server is starting, wait for ready // CN: 服务器正在启动，等待就绪
 			if (StateUtils.isRunning(data.state) && !StateUtils.isReady(data.state)) {
 				return this.waitForServerReady(data.port);
 			}
-			// 有错误，处理错误状态
+			// EN: Has error, handle error state // CN: 有错误，处理错误状态
 			if (StateUtils.hasError(data.state)) {
 				await this.handleErrorState(data);
 			}
 		}
-		// 尝试启动服务器
+		// EN: Try to start server // CN: 尝试启动服务器
 		return this.tryStartServer();
 	}
 
 	/**
-	 * 处理错误状态
+	 * Handle error state - Process server error states like port conflict
+	 * // CN: 处理错误状态
 	 */
 	private async handleErrorState(data: ServerStateData): Promise<void> {
 		if (StateUtils.isPortConflict(data.state)) {
@@ -126,17 +133,18 @@ export class ServerManager {
 	}
 
 	/**
-	 * 尝试启动服务器
+	 * Try to start server - Attempt to start the server process
+	 * // CN: 尝试启动服务器
 	 */
 	private async tryStartServer(forceRestart: boolean = false): Promise<number> {
 		const port = config.getPort();
 
-		// 尝试获取锁
+		// EN: Try to acquire lock // CN: 尝试获取锁
 		const fileLock = new FileLock(this.lockPath);
 		const lockAcquired = await fileLock.tryAcquire(0);
 
 		if (!lockAcquired) {
-			// 其他进程正在启动，等待服务器就绪
+			// EN: Another process is starting server, wait for ready // CN: 其他进程正在启动，等待服务器就绪
 			console.log(
 				"[ServerManager] Another process is starting server, waiting...",
 			);
@@ -144,18 +152,29 @@ export class ServerManager {
 		}
 
 		try {
-			// 启动服务器进程
+			// EN: Clear stale process reference // CN: 清除旧的进程引用
+			this.serverProcess = null;
+			// EN: Spawn server process // CN: 启动服务器进程
 			await this.spawnServer(port, forceRestart);
 		} finally {
 			await fileLock.release();
 		}
 
-		// 等待服务器就绪
+		// EN: Wait for server to be ready // CN: 等待服务器就绪
 		return this.waitForServerReady(port);
 	}
 
 	/**
-	 * 启动服务器进程
+	 * Get server process - Return the server child process for IPC access
+	 * // EN: Returns the server child process for IPC stdin/stdout access // CN: 返回服务器子进程以供 IPC stdin/stdout 访问
+	 */
+	getServerProcess(): import("node:child_process").ChildProcess | null {
+		return this.serverProcess;
+	}
+
+	/**
+	 * Spawn server process - Start the server child process
+	 * // EN: Spawn server with piped stdio for IPC communication // CN: 启动服务器进程，使用管道 stdio 用于 IPC 通信
 	 */
 	private async spawnServer(
 		port: number,
@@ -180,16 +199,17 @@ export class ServerManager {
 			args.push("--cors");
 		}
 
-		const serverProcess = spawn(nodePath, args, {
-			detached: true,
-			stdio: "ignore",
+		// EN: Spawn with piped stdio to enable IPC via stdin/stdout // CN: 使用管道 stdio 启动以通过 stdin/stdout 进行 IPC
+		this.serverProcess = spawn(nodePath, args, {
+			detached: false,
+			stdio: ["pipe", "pipe", "ignore"],
 		});
-
-		serverProcess.unref();
 	}
 
 	/**
-	 * 等待服务器就绪
+	 * Wait for server ready - Poll until server is ready or timeout
+	 * // TODO: [scope] Busy-waits with 200ms polling interval for up to 5 seconds, creating CPU load.
+	 * Could use exponential backoff or event-based notification instead // CN: 占用 CPU 的忙等待，每 200ms 轮询，最多 5 秒。可以使用指数退避或基于事件的通知
 	 */
 	private async waitForServerReady(_port: number): Promise<number> {
 		const start = Date.now();
@@ -210,7 +230,8 @@ export class ServerManager {
 	}
 
 	/**
-	 * 强制重启服务器
+	 * Force restart server - Force restart the server process
+	 * // CN: 强制重启服务器
 	 */
 	async forceRestart(): Promise<number> {
 		console.log("[ServerManager] Force restarting server...");
@@ -218,7 +239,8 @@ export class ServerManager {
 	}
 
 	/**
-	 * 检查服务器是否存活
+	 * Check if server alive - Ping server health endpoint
+	 * // CN: 检查服务器是否存活
 	 */
 	private async isServerAlive(port: number): Promise<boolean> {
 		try {

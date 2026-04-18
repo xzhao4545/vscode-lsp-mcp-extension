@@ -1,32 +1,38 @@
 /**
- * 状态文件读写
+ * State file read/write operations
+ * // CN: 状态文件读写
  */
 
 import * as crypto from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import * as path from "node:path";
 import { SERVER_STATE_FILE } from "./constants";
-import { ServerState, type ServerStateData, StateUtils } from "./types";
+import { ServerState, type ServerStateData, StateUtils, getIpcPath } from "./types";
 
 /**
- * 状态文件管理器
+ * State file manager
+ * // CN: 状态文件管理器
  */
 export class StateFile {
 	private filePath: string;
+	private pipePath: string;
 
 	constructor(storagePath: string) {
 		this.filePath = path.join(storagePath, SERVER_STATE_FILE);
+		this.pipePath = getIpcPath(storagePath);
 	}
 
 	/**
-	 * 获取状态文件路径
+	 * Get state file path
+	 * // CN: 获取状态文件路径
 	 */
 	getPath(): string {
 		return this.filePath;
 	}
 
 	/**
-	 * 读取状态文件
+	 * Read state file
+	 * // CN: 读取状态文件
 	 */
 	async read(): Promise<ServerStateData | null> {
 		try {
@@ -38,7 +44,8 @@ export class StateFile {
 	}
 
 	/**
-	 * 写入状态文件
+	 * Write state file
+	 * // CN: 写入状态文件
 	 */
 	async write(data: ServerStateData): Promise<void> {
 		await mkdir(path.dirname(this.filePath), { recursive: true });
@@ -47,22 +54,24 @@ export class StateFile {
 
 	private createInstanceState(
 		port: number,
-	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime"> {
+	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime"> & Partial<Pick<ServerStateData, "pipePath">> {
 		return {
 			port,
 			pid: process.pid,
 			instanceId: crypto.randomUUID(),
 			startTime: Date.now(),
+			...(this.pipePath ? { pipePath: this.pipePath } : {}),
 		};
 	}
 
 	private ensureInstanceState(
 		port: number,
 		rawState: ServerStateData | null,
-	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime"> {
+	): Pick<ServerStateData, "port" | "pid" | "instanceId" | "startTime" | "pipePath"> {
 		if (rawState) {
 			return {
 				port: rawState.port,
+				pipePath: rawState.pipePath || this.pipePath,
 				pid: rawState.pid,
 				instanceId: rawState.instanceId,
 				startTime: rawState.startTime,
@@ -72,18 +81,20 @@ export class StateFile {
 	}
 
 	/**
-	 * 删除状态文件
+	 * Delete state file
+	 * // CN: 删除状态文件
 	 */
 	async remove(): Promise<void> {
 		try {
 			await unlink(this.filePath);
 		} catch {
-			// ignore
+			// EN: Ignore // CN: 忽略
 		}
 	}
 
 	/**
-	 * 写入进程已启动状态
+	 * Write process started state
+	 * // CN: 写入进程已启动状态
 	 */
 	async writeStarting(port: number): Promise<ServerStateData> {
 		const data: ServerStateData = {
@@ -94,7 +105,8 @@ export class StateFile {
 		return data;
 	}
 	/**
-	 * 写入运行中状态
+	 * Write running state
+	 * // CN: 写入运行中状态
 	 */
 	async writeRunning(
 		port: number,
@@ -108,7 +120,8 @@ export class StateFile {
 		return data;
 	}
 	/**
-	 * 写入重启中状态
+	 * Write restarting state
+	 * // CN: 写入重启中状态
 	 */
 	async writeRestarting(
 		port: number,
@@ -122,7 +135,8 @@ export class StateFile {
 		return data;
 	}
 	/**
-	 * 写入已关闭状态
+	 * Write stopped state
+	 * // CN: 写入已关闭状态
 	 */
 	async writeStopped(
 		port: number,
@@ -136,7 +150,8 @@ export class StateFile {
 		return data;
 	}
 	/**
-	 * 写入端口冲突错误
+	 * Write port conflict error
+	 * // CN: 写入端口冲突错误
 	 */
 	async writePortConflict(
 		port: number,
@@ -153,7 +168,8 @@ export class StateFile {
 		return data;
 	}
 	/**
-	 * 写入服务器已运行错误
+	 * Write server already running error
+	 * // CN: 写入服务器已运行错误
 	 */
 	async writeAlreadyRunning(
 		rawState: ServerStateData,
@@ -167,7 +183,8 @@ export class StateFile {
 		return data;
 	}
 	/**
-	 * 写入未知错误
+	 * Write unknown error
+	 * // CN: 写入未知错误
 	 */
 	async writeError(
 		port: number,

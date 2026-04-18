@@ -20,19 +20,22 @@ interface GetDiagnosticsResult {
 }
 
 /**
- * GetDiagnostics - 获取诊断信息
+ * GetDiagnosticsTool - Get diagnostic information
+ * // CN: 获取诊断信息
  */
 export class GetDiagnosticsTool extends BaseTool {
 	readonly name = "getDiagnostics";
 
-	async execute(args: Record<string, unknown>): Promise<GetDiagnosticsResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<GetDiagnosticsResult> {
+		// TODO: [logic] The CancellationToken parameter is received but NOT passed to waitForDiagnostics, // CN: CancellationToken参数已接收但未传递给waitForDiagnostics
+		// TODO: [race] so if the caller cancels this operation, waitForDiagnostics will keep polling until timeout // CN: 因此如果调用者取消此操作，waitForDiagnostics将继续轮询直到超时
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,
 		);
 		const query = this.stringToSeverity(args.severity as string);
 
-		// 等待诊断就绪
+		// EN: Wait for diagnostics to be ready // CN: 等待诊断就绪
 		await this.waitForDiagnostics(uri);
 
 		const diagnostics = vscode.languages.getDiagnostics(uri);
@@ -50,7 +53,8 @@ export class GetDiagnosticsTool extends BaseTool {
 	}
 
 	/**
-	 * 检查文件是否已加载到内存
+	 * isDocumentLoaded - Check if file is loaded into memory
+	 * // CN: 检查文件是否已加载到内存
 	 */
 	private isDocumentLoaded(uri: vscode.Uri): boolean {
 		return vscode.workspace.textDocuments.some(
@@ -59,15 +63,18 @@ export class GetDiagnosticsTool extends BaseTool {
 	}
 
 	/**
-	 * 后台打开文件（不在编辑器中展示）
+	 * openDocumentInBackground - Open file in background (without showing in editor)
+	 * // CN: 后台打开文件（不在编辑器中展示）
 	 */
 	private async openDocumentInBackground(uri: vscode.Uri): Promise<void> {
 		await vscode.workspace.openTextDocument(uri);
 	}
 
 	/**
-	 * 某些语言服务仅在文档出现在可见编辑器后才会发布诊断。
-	 * 对于只在当前活动编辑器发布诊断的语言服务，需要真正激活该文档。
+	 * revealDocumentForDiagnostics - Some language services only publish diagnostics after document appears in visible editor.
+	 * // CN: 某些语言服务仅在文档出现在可见编辑器后才会发布诊断。
+	 * For language services that only publish diagnostics in the current active editor, the document needs to be truly activated.
+	 * // CN: 对于只在当前活动编辑器发布诊断的语言服务，需要真正激活该文档。
 	 */
 	private async revealDocumentForDiagnostics(
 		uri: vscode.Uri,
@@ -81,9 +88,13 @@ export class GetDiagnosticsTool extends BaseTool {
 	}
 
 	/**
-	 * 等待诊断就绪
-	 * - 如果文件已加载，直接返回（诊断可能已存在）
-	 * - 如果文件未加载，后台打开并等待诊断事件
+	 * waitForDiagnostics - Wait for diagnostics to be ready
+	 * // CN: 等待诊断就绪
+	 * - If file is loaded, return directly (diagnostics may already exist)
+	 * // CN: - 如果文件已加载，直接返回（诊断可能已存在）
+	 * - If file is not loaded, open in background and wait for diagnostics event
+	 * // CN: - 如果文件未加载，后台打开并等待诊断事件
+	 * TODO: [race] Uses polling via waitForDiagnosticsEvent but has no CancellationToken to abort early // CN: 使用waitForDiagnosticsEvent轮询，但没有CancellationToken提前中止
 	 */
 	private async waitForDiagnostics(uri: vscode.Uri): Promise<void> {
 		if (vscode.languages.getDiagnostics(uri).length > 0) {
@@ -121,9 +132,12 @@ export class GetDiagnosticsTool extends BaseTool {
 	}
 
 	/**
-	 * 等待诊断变化事件
-	 * @param uri 文件 URI
-	 * @param timeout 超时时间（毫秒）
+	 * waitForDiagnosticsEvent - Wait for diagnostics change event
+	 * // CN: 等待诊断变化事件
+	 * @param uri - File URI // CN: 文件 URI
+	 * @param timeout - Timeout in milliseconds // CN: 超时时间（毫秒）
+	 * TODO: [race] Uses setInterval polling and setTimeout for timeout, but does NOT accept a CancellationToken // CN: 使用setInterval轮询和setTimeout超时，但不接受CancellationToken
+	 * TODO: [scope] If cancelled externally, polling continues until the timeout fires regardless // CN: 如果外部取消，轮询将继续直到超时触发
 	 */
 	private waitForDiagnosticsEvent(
 		uri: vscode.Uri,

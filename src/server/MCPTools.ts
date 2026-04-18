@@ -1,27 +1,27 @@
 import { z } from "zod";
 
-// ============ 基础 Schema ============
+// ============ Base Schema ============ // CN: 基础 Schema
 
-/** 项目路径 - 所有工具都需要 */
+/** Project root path - required by all tools */ // CN: 项目路径 - 所有工具都需要
 const projectPath = z.string().describe("Project root path (absolute)");
 
-/** 文件路径 */
+/** File path */ // CN: 文件路径
 const filePath = z
 	.string()
 	.describe("File path (absolute or relative to project)");
 
-/** 行号 (1-based) */
+/** Line number (1-based) */ // CN: 行号 (1-based)
 const line = z.number().describe("Line number (1-based)");
 
-/** 列偏移 (0-based) */
+/** Column offset (0-based) */ // CN: 列偏移 (0-based)
 const character = z.number().describe("Column offset (0-based)");
 
-/** 分页 */
+/** Pagination */ // CN: 分页
 const page = z.number().optional().describe("Page number (1-based), default 1");
 
 const symbolName = z.string().describe("Symbol name for validation");
 
-// ============ 工具定义 ============
+// ============ Tool Definitions ============ // CN: 工具定义
 
 export const TOOL_SCHEMAS = {
 	listOpenProjects: {
@@ -97,6 +97,7 @@ export const TOOL_SCHEMAS = {
 		}),
 	},
 
+	// TODO: [test] getSymbolStruct schema defined but no test data file at src/test/testData/mcp/getSymbolStruct.json // CN: getSymbolStruct 的模式已定义但测试数据文件不存在
 	getSymbolStruct: {
 		description:
 			"Get the structure of a specific symbol (class, method, etc.). Use this to expand collapsed symbols from getFileStruct results.\n" +
@@ -249,10 +250,10 @@ export const TOOL_SCHEMAS = {
 	},
 } as const;
 
-/** 工具名称类型 */
+/** Tool name type */ // CN: 工具名称类型
 export type ToolName = keyof typeof TOOL_SCHEMAS;
 
-/** 获取工具输入类型 */
+/** Get tool input type */ // CN: 获取工具输入类型
 export type ToolInput<T extends ToolName> = z.infer<
 	(typeof TOOL_SCHEMAS)[T]["inputSchema"]
 >;

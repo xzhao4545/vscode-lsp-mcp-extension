@@ -153,12 +153,13 @@ export async function resolveWorkspaceQuery(
 }
 
 /**
- * SearchSymbolInWorkspace - 工作区符号搜索
+ * SearchSymbolInWorkspaceTool - Workspace symbol search
+ * // CN: 工作区符号搜索
  */
 export class SearchSymbolInWorkspaceTool extends BaseTool {
 	readonly name = "searchSymbolInWorkspace";
 
-	async execute(args: Record<string, unknown>): Promise<SearchSymbolResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<SearchSymbolResult> {
 		const query = args.query as string;
 		const projectPath = args.projectPath as string;
 		const symbolType =
@@ -229,7 +230,7 @@ export class SearchSymbolInWorkspaceTool extends BaseTool {
 		}
 		const page = (args.page as number) || 1;
 		const paginated = PaginationHelper.paginate(result.symbols, page);
-		// 按 URI 聚合
+		// EN: Group by URI // CN: 按 URI 聚合
 		const grouped = new Map<string, WorkspaceSymbol[]>();
 		for (const sym of paginated.items) {
 			const syms = grouped.get(sym.uri) || [];

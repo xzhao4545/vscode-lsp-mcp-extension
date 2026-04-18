@@ -1,7 +1,3 @@
-/**
- * MCP 服务器入口
- */
-
 import * as http from "node:http";
 import * as path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -18,7 +14,7 @@ import { McpServer } from "./McpServer";
 import { ShutdownManager } from "./ShutdownManager";
 import { StateFileWatcher } from "./StateFileWatcher";
 import { TaskManager } from "./TaskManager";
-import { WebSocketServer } from "./WebSocketServer";
+import { StdioChannel } from "./IpcServer";
 
 function parseArgs(): {
 	port: number;
@@ -66,7 +62,7 @@ const stateFile = new StateFile(storagePath);
 const fileLock = new FileLock(lockPath);
 
 let httpServer: http.Server | null = null;
-let wsServer: WebSocketServer | null = null;
+let ipcServer: StdioChannel | null = null;
 let stateFileWatcher: StateFileWatcher | null = null;
 let taskManager: TaskManager | null = null;
 let mcpServer: McpServer | null = null;
@@ -142,14 +138,13 @@ async function startServer(): Promise<void> {
 		throw new Error("Shutdown manager not initialized");
 	}
 
-	wsServer = new WebSocketServer(
-		httpServer,
+	ipcServer = new StdioChannel(
 		registry,
 		taskMgr,
 		idleShutdownManager,
 	);
 
-	wsServer.onRestart(() => {
+	ipcServer.onRestart(() => {
 		void handleRestartRequest();
 	});
 
@@ -157,6 +152,10 @@ async function startServer(): Promise<void> {
 	if (!server) {
 		throw new Error("HTTP server not initialized");
 	}
+
+	// Start the stdio channel for IPC with extension
+	ipcServer.listen();
+	
 
 	await new Promise<void>((resolve, reject) => {
 		server.once("error", (err: NodeJS.ErrnoException) => {
@@ -242,7 +241,7 @@ async function requestShutdown(
 		stateFileWatcher?.stop();
 		shutdownManager?.stop();
 		taskManager?.cleanup();
-		await wsServer?.close();
+		await ipcServer?.close();
 		await mcpServer?.close();
 		await closeHttpServer();
 

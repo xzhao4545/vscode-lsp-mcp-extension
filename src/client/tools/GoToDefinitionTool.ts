@@ -27,12 +27,13 @@ interface GoToDefinitionResult {
 }
 
 /**
- * GoToDefinition - 跳转到定义
+ * GoToDefinitionTool - Navigate to symbol definition
+ * // CN: 跳转到定义
  */
 export class GoToDefinitionTool extends BaseTool {
 	readonly name = "goToDefinition";
 
-	async execute(args: Record<string, unknown>): Promise<GoToDefinitionResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<GoToDefinitionResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,
@@ -43,7 +44,7 @@ export class GoToDefinitionTool extends BaseTool {
 		);
 		const symbolName = args.symbolName as string;
 
-		// 验证 symbol
+		// EN: Validate symbol // CN: 验证 symbol
 		const validation = await SymbolValidator.validate(
 			uri,
 			position,
@@ -98,7 +99,7 @@ export class GoToDefinitionTool extends BaseTool {
 			const sb = new StringBuilder();
 			sb.appendLine(this.emptyContent(result.error));
 
-			// 如果有候选位置，显示建议
+			// EN: If there are candidate positions, show suggestions // CN: 如果有候选位置，显示建议
 			if (result.suggestedPositions && result.suggestedPositions.length > 0) {
 				sb.appendLine();
 				sb.appendLine("**Suggested positions for this symbol:**");
