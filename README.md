@@ -119,6 +119,21 @@ If you change `ide-lsp-mcp.port`, update the MCP server URL to match the configu
              └─────────────┘           └─────────────┘           └─────────────┘
 ```
 
+## MemPalace
+
+This project uses [MemPalace](https://github.com/mempalace/mempalace) for semantic memory search. After initialization, the codebase is organized into searchable rooms for quick knowledge retrieval.
+
+```bash
+# Initialize MemPalace (already configured)
+mempalace init .
+
+# Mine project data into memory palace
+mempalace mine .
+
+# Search memories
+mempalace search <query>
+```
+
 ## Documentation
 
 - [Features](./doc/FEATURES.md)
