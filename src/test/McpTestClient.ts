@@ -10,7 +10,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 const MCP_SERVER_URL = "http://127.0.0.1:53221/mcp";
 const SERVER_START_TIMEOUT = 10000;
 const SERVER_POLL_INTERVAL = 200;
-const MCP_TOOL_PREFIX = "IDE-";
+const MCP_TOOL_PREFIX = "";
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));

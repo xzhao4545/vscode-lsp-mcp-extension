@@ -37,14 +37,21 @@ export class McpServer {
 	 */
 	private createMcpServer(): McpServerSDK {
 		const server = new McpServerSDK(
-			{ name: "ide-lsp-mcp", version: "0.0.1" },
-			{ capabilities: { tools: {} } },
+			{ name: "ide-lsp-mcp", version: "0.1.2" },
+			{
+				capabilities: { tools: {} },
+				instructions:
+					"You are connected to the IDE-LSP-MCP Server, which exposes code intelligence from the currently opened IDE through MCP tools. " +
+					"These tools directly reuse the IDE's active LSP services, so they can answer workspace-aware code questions without re-parsing files or launching a separate language server. " +
+					"For symbol lookup, rename preparation, reference search, definition lookup, implementation lookup, diagnostics, and similar code-intelligence tasks, prefer the tools provided by this service over text search or independent LSP instances.\n" +
+					"Tools with a page parameter support cached pagination. When requesting another page from the same query, keep all other parameters unchanged to preserve cache hits and reduce repeated work.",
+			},
 		);
 
 		for (const [name, tool] of Object.entries(toolSCHEMAS)) {
 			const toolName = name as ToolName;
 			server.registerTool(
-				`IDE-${toolName}`,
+				toolName,
 				{
 					description: tool.description,
 					inputSchema: tool.inputSchema,
@@ -142,11 +149,10 @@ export class McpServer {
 
 		if (projectPath) {
 			const formatedPath = ClientRegistry.normalizePath(projectPath);
-			const targetWorkspace = result.workspaces?.filter(
-				(ws) =>
-					ws.folders.some((f) =>
-						ClientRegistry.containsPath(formatedPath, f.path),
-					),
+			const targetWorkspace = result.workspaces?.filter((ws) =>
+				ws.folders.some((f) =>
+					ClientRegistry.containsPath(formatedPath, f.path),
+				),
 			);
 			if (targetWorkspace && targetWorkspace.length <= 0) {
 				return `The workspace corresponding to the specified \`${formatedPath}\` cannot be found.`;

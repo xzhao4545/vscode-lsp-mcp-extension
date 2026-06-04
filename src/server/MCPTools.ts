@@ -26,13 +26,7 @@ const symbolName = z.string().describe("Symbol name for validation");
 export const TOOL_SCHEMAS = {
 	listOpenProjects: {
 		description:
-			'<important>Prioritize methods including with "IDE-" to ensure better performance and cache utilization.\n' +
-			'You are connected to the IDE-LSP-MCP Server. All methods prefixed with "IDE-" are provided by this service. ' +
-			"These methods directly reuse the LSP service exported from the currently opened IDE, eliminating the need to re-parse files. " +
-			"As a result, they offer better performance compared to other LSP instances or text-based searches (e.g., grep).\n" +
-			'When performing operations such as symbol lookup, rename, find references, or go to definition, always prioritize methods that start with "IDE-" instead of using text search or launching a new LSP service.\n' +
-			'In addition, all "IDE-" methods that include a page parameter support caching. When requesting the next page, keep all other parameters unchanged to ensure cache hits and reduce the number of queries.</important>\n\n' +
-			"listOpenProjects: List open workspaces in the IDE. When projectPath is provided, return matching targetWorkspace entries only.",
+			"List open workspaces in the IDE. When projectPath is provided, return matching targetWorkspace entries only.",
 		inputSchema: z.object({
 			projectPath: z
 				.string()
