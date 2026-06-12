@@ -1,0 +1,40 @@
+wing: vscode_lsp_mcp_extension
+rooms:
+- name: l10n
+  description: Files from l10n/
+  keywords:
+  - l10n
+  - l10n
+- name: images
+  description: Files from images/
+  keywords:
+  - images
+  - images
+- name: documentation
+  description: Files from readme/
+  keywords:
+  - documentation
+  - readme
+- name: src
+  description: Files from src/
+  keywords:
+  - src
+  - src
+- name: testing
+  description: Files from test/
+  keywords:
+  - testing
+  - test
+- name: backend
+  description: Files from server/
+  keywords:
+  - backend
+  - server
+- name: frontend
+  description: Files from client/
+  keywords:
+  - frontend
+  - client
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []

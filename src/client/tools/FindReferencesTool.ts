@@ -21,12 +21,13 @@ interface FindReferencesResult {
 }
 
 /**
- * FindReferences - 查找引用
+ * FindReferencesTool - Find symbol references
+ * // CN: 查找引用
  */
 export class FindReferencesTool extends BaseTool {
 	readonly name = "findReferences";
 
-	async execute(args: Record<string, unknown>): Promise<FindReferencesResult> {
+	async execute(args: Record<string, unknown>, token?: vscode.CancellationToken): Promise<FindReferencesResult> {
 		const uri = this.resolveUri(
 			args.projectPath as string,
 			args.filePath as string,
@@ -37,7 +38,7 @@ export class FindReferencesTool extends BaseTool {
 		);
 		const symbolName = args.symbolName as string;
 
-		// 验证 symbol
+		// EN: Validate symbol // CN: 验证 symbol
 		const validation = await SymbolValidator.validate(
 			uri,
 			position,
@@ -103,7 +104,7 @@ export class FindReferencesTool extends BaseTool {
 		const page = (args.page as number) || 1;
 		const paginated = PaginationHelper.paginate(result.references, page);
 
-		// 按 URI 聚合
+		// EN: Group by URI // CN: 按 URI 聚合
 		const grouped = new Map<string, Reference[]>();
 		for (const ref of paginated.items) {
 			const refs = grouped.get(ref.uri) || [];

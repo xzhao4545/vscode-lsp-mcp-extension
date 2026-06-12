@@ -1,5 +1,6 @@
 /**
- * 调试日志存储 - 管理工具调用的调试日志
+ * DebugLogStore - Manages debug log entries for tool invocations
+ * // CN: 调试日志存储 - 管理工具调用的调试日志
  */
 
 import * as vscode from "vscode";
@@ -12,7 +13,8 @@ export class DebugLogStore {
 	readonly onDidChange = this._onDidChange.event;
 
 	/**
-	 * 添加日志条目
+	 * Add a log entry
+	 * // CN: 添加日志条目
 	 */
 	add(entry: DebugLogEntry): void {
 		this.entries.unshift(entry);
@@ -23,21 +25,24 @@ export class DebugLogStore {
 	}
 
 	/**
-	 * 获取所有条目
+	 * Get all entries
+	 * // CN: 获取所有条目
 	 */
 	getAll(): DebugLogEntry[] {
 		return this.entries;
 	}
 
 	/**
-	 * 根据时间戳获取条目
+	 * Get entry by timestamp
+	 * // CN: 根据时间戳获取条目
 	 */
 	getByTimestamp(timestamp: number): DebugLogEntry | undefined {
 		return this.entries.find((e) => e.timestamp === timestamp);
 	}
 
 	/**
-	 * 清空所有条目
+	 * Clear all entries
+	 * // CN: 清空所有条目
 	 */
 	clear(): void {
 		this.entries = [];
@@ -45,7 +50,8 @@ export class DebugLogStore {
 	}
 
 	/**
-	 * 获取条目数量
+	 * Get entry count
+	 * // CN: 获取条目数量
 	 */
 	get size(): number {
 		return this.entries.length;

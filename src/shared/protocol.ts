@@ -1,62 +1,26 @@
 /**
- * WebSocket 消息协议定义
+ * JSON-RPC over IPC message protocol definitions
+ * // CN: 基于 IPC 的 JSON-RPC 消息协议定义
  */
 
+import { NotificationType, RequestType } from "vscode-jsonrpc/node";
 import type { Folder } from "./types";
 
-// ============ 窗口 → 服务器 消息 ============
+// ============ Window → Server Messages ============
+// EN: 窗口 → 服务器 消息
 
-/** 注册消息 */
-export interface RegisterMessage {
-	type: "register";
-	folders: Folder[];
-}
+/** Register message // CN: 注册消息 */
+export const registerNotification = new NotificationType<{ folders: Folder[] }>("register");
 
-/** 任务结果消息 */
-export interface ResultMessage {
-	type: "result";
-	requestId: string;
-	data: unknown;
-}
+/** Restart request message // CN: 重启请求消息 */
+export const restartNotification = new NotificationType<void>("restart");
 
-/** 任务错误消息 */
-export interface ErrorMessage {
-	type: "error";
-	requestId: string;
-	error: {
-		code?: string;
-		message: string;
-	};
-}
-/** 重启请求消息 */
-export interface RestartMessage {
-	type: "restart";
-}
+// ============ Server → Window Messages ============
+// EN: 服务器 → 窗口 消息
 
-/** 窗口发送的消息类型 */
-export type ClientMessage =
-	| RegisterMessage
-	| ResultMessage
-	| ErrorMessage
-	| RestartMessage;
+/** Registration confirmation message // CN: 注册确认消息 */
+export const registeredNotification = new NotificationType<{ windowId: string }>("registered");
 
-// ============ 服务器 → 窗口 消息 ============
+/** Task dispatch message // CN: 任务下发消息 */
+export const taskRequest = new RequestType<{ tool: string, args: Record<string, unknown> }, unknown, Error>("task");
 
-/** 注册确认消息 */
-export interface RegisteredMessage {
-	type: "registered";
-	windowId: string;
-}
-
-/** 任务下发消息 */
-export interface TaskMessage {
-	type: "task";
-	requestId: string;
-	tool: string;
-	args: Record<string, unknown>;
-}
-/** 服务器发送的消息类型 */
-export type ServerMessage = RegisteredMessage | TaskMessage;
-
-/** 所有消息类型 */
-export type Message = ClientMessage | ServerMessage;
