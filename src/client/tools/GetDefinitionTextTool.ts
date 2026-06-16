@@ -20,7 +20,8 @@ interface GetDefinitionTextResult {
 }
 
 /**
- * GetDefinitionText - 获取定义的完整文本（包括注释和代码体）
+ * GetDefinitionTextTool - Get full definition text including comments and code body
+ * // CN: 获取定义的完整文本（包括注释和代码体）
  */
 export class GetDefinitionTextTool extends BaseTool {
 	readonly name = "getDefinitionText";
@@ -38,7 +39,7 @@ export class GetDefinitionTextTool extends BaseTool {
 		);
 		const symbolName = args.symbolName as string;
 
-		// 验证 symbol
+		// EN: Validate symbol // CN: 验证 symbol
 		const validation = await SymbolValidator.validate(
 			uri,
 			position,
@@ -84,8 +85,10 @@ export class GetDefinitionTextTool extends BaseTool {
 	}
 
 	/**
-	 * 获取定义的完整范围（包括注释和代码体）
-	 * 优先使用 DocumentSymbol，备选使用 FoldingRange
+	 * getFullDefinitionRange - Get full definition range including comments and code body
+	 * // CN: 获取定义的完整范围（包括注释和代码体）
+	 * Priority: DocumentSymbol, fallback to FoldingRange
+	 * // CN: 优先使用 DocumentSymbol，备选使用 FoldingRange
 	 */
 	private async getFullDefinitionRange(
 		uri: vscode.Uri,
@@ -93,7 +96,7 @@ export class GetDefinitionTextTool extends BaseTool {
 	): Promise<vscode.Range> {
 		const targetLine = defRange.start.line;
 
-		// 方案1: 通过 DocumentSymbol 查找
+		// EN: Approach 1: Find via DocumentSymbol // CN: 方案1: 通过 DocumentSymbol 查找
 		const symbolRange = await this.getSymbolRange(uri, targetLine);
 		if (symbolRange && symbolRange.end.line > symbolRange.start.line) {
 			const rangeWithComments = await this.expandRangeWithComments(
@@ -103,7 +106,7 @@ export class GetDefinitionTextTool extends BaseTool {
 			return rangeWithComments;
 		}
 
-		// 方案2: 通过 FoldingRange 查找（对顶层函数更可靠）
+		// EN: Approach 2: Find via FoldingRange (more reliable for top-level functions) // CN: 方案2: 通过 FoldingRange 查找（对顶层函数更可靠）
 		const foldingRange = await this.getFoldingRange(uri, targetLine);
 		if (foldingRange) {
 			const range = new vscode.Range(
@@ -118,7 +121,8 @@ export class GetDefinitionTextTool extends BaseTool {
 	}
 
 	/**
-	 * 通过 DocumentSymbol 获取符号范围
+	 * getSymbolRange - Get symbol range via DocumentSymbol
+	 * // CN: 通过 DocumentSymbol 获取符号范围
 	 */
 	private async getSymbolRange(
 		uri: vscode.Uri,
@@ -136,7 +140,8 @@ export class GetDefinitionTextTool extends BaseTool {
 	}
 
 	/**
-	 * 通过 FoldingRange 获取代码块范围
+	 * getFoldingRange - Get code block range via FoldingRange
+	 * // CN: 通过 FoldingRange 获取代码块范围
 	 */
 	private async getFoldingRange(
 		uri: vscode.Uri,
@@ -161,7 +166,8 @@ export class GetDefinitionTextTool extends BaseTool {
 	}
 
 	/**
-	 * 递归查找包含目标行的最小符号
+	 * findSmallestContainingSymbol - Recursively find the smallest symbol containing the target line
+	 * // CN: 递归查找包含目标行的最小符号
 	 */
 	private findSmallestContainingSymbol(
 		symbols: vscode.DocumentSymbol[],
@@ -187,7 +193,8 @@ export class GetDefinitionTextTool extends BaseTool {
 	}
 
 	/**
-	 * 向上扩展范围以包含前置注释（JSDoc、行注释等）
+	 * expandRangeWithComments - Expand range upward to include leading comments (JSDoc, line comments, etc.)
+	 * // CN: 向上扩展范围以包含前置注释（JSDoc、行注释等）
 	 */
 	private async expandRangeWithComments(
 		uri: vscode.Uri,

@@ -22,7 +22,8 @@ interface GetFileStructResult {
 }
 
 /**
- * GetFileStruct - 文件符号结构
+ * GetFileStructTool - File symbol structure
+ * // CN: 文件符号结构
  */
 export class GetFileStructTool extends BaseTool {
 	readonly name = "getFileStruct";
@@ -32,7 +33,7 @@ export class GetFileStructTool extends BaseTool {
 			args.projectPath as string,
 			args.filePath as string,
 		);
-		const maxDepth = (args.maxDepth as number) ?? -1; // 默认 auto (-1)
+		const maxDepth = (args.maxDepth as number) ?? -1; // EN: Default auto (-1) // CN: 默认 auto (-1)
 		const maxLines = Config.getMaxStructLines();
 
 		const symbols = await getDocumentSymbolsWithWarmup(uri);
@@ -57,11 +58,11 @@ export class GetFileStructTool extends BaseTool {
 
 		const mappedSymbols = symbols.map(mapSymbol);
 
-		// 计算完整树的最大深度
+		// EN: Calculate max depth of complete tree // CN: 计算完整树的最大深度
 		const fullMaxDepth = this.calculateMaxDepth(mappedSymbols);
 
 		if (maxDepth < 0) {
-			// Auto 模式：从最大深度递减直到行数 <= maxLines
+			// EN: Auto mode: decrement from max depth until line count <= maxLines // CN: Auto 模式：从最大深度递减直到行数 <= maxLines
 			const result = this.autoAdjustDepth(
 				mappedSymbols,
 				fullMaxDepth,
@@ -69,14 +70,15 @@ export class GetFileStructTool extends BaseTool {
 			);
 			return result;
 		} else {
-			// 固定深度模式：忽略 maxLines
+			// EN: Fixed depth mode: ignore maxLines // CN: 固定深度模式：忽略 maxLines
 			const result = this.applyFixedDepth(mappedSymbols, maxDepth);
 			return result;
 		}
 	}
 
 	/**
-	 * 计算符号树的最大深度
+	 * calculateMaxDepth - Calculate max depth of symbol tree
+	 * // CN: 计算符号树的最大深度
 	 */
 	private calculateMaxDepth(symbols: SymbolInfo[]): number {
 		let maxDepth = 0;
@@ -102,14 +104,15 @@ export class GetFileStructTool extends BaseTool {
 	}
 
 	/**
-	 * Auto 模式：自动调整深度以满足 maxLines 限制
+	 * autoAdjustDepth - Auto mode: automatically adjust depth to meet maxLines limit
+	 * // CN: Auto 模式：自动调整深度以满足 maxLines 限制
 	 */
 	private autoAdjustDepth(
 		symbols: SymbolInfo[],
 		maxPossibleDepth: number,
 		maxLines: number,
 	): GetFileStructResult {
-		// 从最大深度开始递减
+		// EN: Start decrementing from max depth // CN: 从最大深度开始递减
 		for (let depth = maxPossibleDepth; depth >= 1; depth--) {
 			const result = this.applyDepthWithCollapse(symbols, depth);
 			const lineCount = this.countOutputLines(result.symbols);
@@ -119,12 +122,13 @@ export class GetFileStructTool extends BaseTool {
 			}
 		}
 
-		// 即使深度为 1 也超过限制，强制深度 1 并标记所有有子节点的符号为折叠
+		// EN: Even depth 1 exceeds limit, force depth 1 and mark all symbols with children as collapsed // CN: 即使深度为 1 也超过限制，强制深度 1 并标记所有有子节点的符号为折叠
 		return this.applyDepthWithCollapse(symbols, 1);
 	}
 
 	/**
-	 * 应用指定深度，超出深度的节点标记为 collapsed
+	 * applyDepthWithCollapse - Apply target depth, nodes exceeding depth are marked as collapsed
+	 * // CN: 应用指定深度，超出深度的节点标记为 collapsed
 	 */
 	private applyDepthWithCollapse(
 		symbols: SymbolInfo[],
@@ -143,7 +147,7 @@ export class GetFileStructTool extends BaseTool {
 		targetDepth: number,
 	): SymbolInfo {
 		if (currentDepth >= targetDepth) {
-			// 到达目标深度，检查是否有子节点
+			// EN: Reached target depth, check if has children // CN: 到达目标深度，检查是否有子节点
 			if (symbol.children && symbol.children.length > 0) {
 				return {
 					...symbol,
@@ -154,7 +158,7 @@ export class GetFileStructTool extends BaseTool {
 			return symbol;
 		}
 
-		// 未到达目标深度，保留子节点
+		// EN: Not yet reached target depth, keep children // CN: 未到达目标深度，保留子节点
 		if (symbol.children && symbol.children.length > 0) {
 			return {
 				...symbol,
@@ -167,7 +171,8 @@ export class GetFileStructTool extends BaseTool {
 	}
 
 	/**
-	 * 固定深度模式
+	 * applyFixedDepth - Fixed depth mode
+	 * // CN: 固定深度模式
 	 */
 	private applyFixedDepth(
 		symbols: SymbolInfo[],
@@ -181,7 +186,8 @@ export class GetFileStructTool extends BaseTool {
 	}
 
 	/**
-	 * 检查是否存在折叠节点
+	 * checkHasCollapsed - Check if any collapsed nodes exist
+	 * // CN: 检查是否存在折叠节点
 	 */
 	private checkHasCollapsed(symbols: SymbolInfo[]): boolean {
 		for (const symbol of symbols) {
@@ -196,7 +202,8 @@ export class GetFileStructTool extends BaseTool {
 	}
 
 	/**
-	 * 计算输出行数（模拟 format 输出）
+	 * countOutputLines - Calculate output line count (simulating format output)
+	 * // CN: 计算输出行数（模拟 format 输出）
 	 */
 	private countOutputLines(symbols: SymbolInfo[]): number {
 		let count = 3; // 标题行 "## File Structure" + 空行 + 结尾提示
@@ -207,7 +214,7 @@ export class GetFileStructTool extends BaseTool {
 	}
 
 	private countSymbolLines(symbol: SymbolInfo, indent: number): number {
-		// 每个符号占一行
+		// EN: Each symbol takes one line // CN: 每个符号占一行
 		let count = 1;
 		if (symbol.children && !symbol.collapsed) {
 			for (const child of symbol.children) {

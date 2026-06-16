@@ -9,7 +9,8 @@ interface SyncFilesResult {
 }
 
 /**
- * SyncFiles - 同步文件
+ * SyncFilesTool - Sync files
+ * // CN: 同步文件
  */
 export class SyncFilesTool extends BaseTool {
 	readonly name = "syncFiles";
