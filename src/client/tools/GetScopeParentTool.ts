@@ -15,7 +15,8 @@ interface GetScopeParentResult {
 }
 
 /**
- * GetScopeParent - 查找父级符号
+ * GetScopeParentTool - Find parent symbol
+ * // CN: 查找父级符号
  */
 export class GetScopeParentTool extends BaseTool {
 	readonly name = "getScopeParent";
