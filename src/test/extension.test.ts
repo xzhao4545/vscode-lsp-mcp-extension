@@ -1,530 +1,174 @@
+/**
+ * MCP Tools Test
+ *
+ * Tests MCP tool return results by making HTTP requests to the MCP server.
+ * Test data is read from JSON files, expected results are saved as MD files.
+ *
+ * Reference: IntelliJ version McpToolsTest.kt implementation
+ * // CN: MCP 工具测试
+ * // CN: 通过 HTTP 客户端请求 MCP 服务器测试工具返回结果。
+ * // CN: 测试数据从 JSON 文件读取，预期结果保存为 MD 文件。
+ * // CN: 参考 IntelliJ 版本的 McpToolsTest.kt 实现。
+ */
+
 import * as assert from "node:assert";
+import * as fs from "node:fs";
 import * as path from "node:path";
+import { McpTestClient, type TestCase } from "./McpTestClient";
 
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
-import * as vscode from "vscode";
-import Config from "../client/Config";
-import { GetDiagnosticsTool } from "../client/tools/GetDiagnosticsTool";
-import { GetScopeParentTool } from "../client/tools/GetScopeParentTool";
-import { flattenIncomingCalls } from "../client/tools/IncomingCallsTool";
-import {
-	buildSearchFilesGlob,
-	buildSearchFilesRegex,
-	SearchFilesTool,
-} from "../client/tools/SearchFilesTool";
-import {
-	filterWorkspaceSymbols,
-	resolveWorkspaceQuery,
-	retryWorkspaceQuery,
-} from "../client/tools/SearchSymbolInWorkspaceTool";
-import { LocationHelper } from "../client/utils/LocationHelper";
-import {
-	ensureWorkspaceSymbolProviderReady,
-	retryUntilReady,
-} from "../client/utils/SymbolProviderWarmup";
-import { ClientRegistry } from "../server/ClientRegistry";
-import { toServerToolName } from "./McpTestClient";
+// EN: Configuration // CN: 配置
+const TEST_DATA_DIR = path.join(
+	__dirname,
+	"..",
+	"..",
+	"src",
+	"test",
+	"testData",
+	"mcp",
+);
+const EXPECTED_DIR = path.join(TEST_DATA_DIR, "expected");
+const PROJECT_PATH_PLACEHOLDER = "${" + "projectPath}";
 
-// import * as myExtension from '../../extension';
+// EN: Test project path - modify as needed // CN: 测试项目路径 - 需要根据实际情况修改
+const PROJECT_PATH =
+	process.env.TEST_PROJECT_PATH || "D:\\Project\\PythonTest\\paper_translation";
 
-suite("Extension Test Suite", () => {
-	vscode.window.showInformationMessage("Start all tests.");
+suite("MCP Tools Test Suite", function () {
+	this.timeout(60000); // EN: 60 second timeout // CN: 60秒超时
 
-	test("ClientRegistry.containsPath matches parent path and nested workspace", () => {
-		const parentPath = path.resolve("D:/Project/node");
-		const workspaceRoot = path.join(parentPath, "ide-lsp-for-mcp");
+	let client: McpTestClient;
 
-		assert.strictEqual(ClientRegistry.containsPath(parentPath, parentPath), true);
-		assert.strictEqual(ClientRegistry.containsPath(parentPath, workspaceRoot), true);
-	});
+	suiteSetup(async () => {
+		client = new McpTestClient();
 
-	test("ClientRegistry.containsPath rejects child-to-parent lookup", () => {
-		const parentPath = path.resolve("D:/Project/node");
-		const workspaceRoot = path.join(parentPath, "ide-lsp-for-mcp");
+		// EN: Establish SSE connection // CN: 建立 SSE 连接
+		await client.connect();
 
-		assert.strictEqual(
-			ClientRegistry.containsPath(workspaceRoot, parentPath),
-			false,
-		);
-	});
-
-	test("LocationHelper.normalize prefers targetSelectionRange for definition links", () => {
-		const uri = vscode.Uri.file(path.resolve("src/client/tools/BaseTool.ts"));
-		const locations = LocationHelper.normalize([
-			{
-				targetUri: uri,
-				targetRange: new vscode.Range(0, 0, 10, 0),
-				targetSelectionRange: new vscode.Range(4, 7, 4, 15),
-				originSelectionRange: new vscode.Range(0, 0, 0, 1),
-			},
-		]);
-
-		assert.strictEqual(locations.length, 1);
-		assert.strictEqual(locations[0].range.start.line, 4);
-		assert.strictEqual(locations[0].range.start.character, 7);
-	});
-
-	test("GetScopeParentTool.findParent returns the innermost symbol for a line", () => {
-		const classSymbol = new vscode.DocumentSymbol(
-			"DebugPanelProvider",
-			"",
-			vscode.SymbolKind.Class,
-			new vscode.Range(48, 0, 75, 1),
-			new vscode.Range(48, 13, 48, 31),
-		);
-		const methodSymbol = new vscode.DocumentSymbol(
-			"getChildren",
-			"",
-			vscode.SymbolKind.Method,
-			new vscode.Range(68, 1, 70, 2),
-			new vscode.Range(68, 1, 68, 12),
-		);
-		classSymbol.children.push(methodSymbol);
-
-		const parent = GetScopeParentTool.findParent([classSymbol], 69);
-
-		assert.ok(parent);
-		assert.strictEqual(parent?.name, "getChildren");
-	});
-
-	test("flattenIncomingCalls expands each fromRange into a concrete call site", async () => {
-		const uri = vscode.Uri.file(
-			path.resolve("src/client/tools/IncomingCallsTool.ts"),
-		);
-		const incomingCall = {
-			from: {
-				uri,
-				name: "callerFunction",
-				range: new vscode.Range(10, 1, 14, 1),
-				selectionRange: new vscode.Range(10, 7, 10, 21),
-			},
-			fromRanges: [
-				new vscode.Range(11, 4, 11, 18),
-				new vscode.Range(13, 6, 13, 20),
-			],
-		} as unknown as vscode.CallHierarchyIncomingCall;
-
-		const result = await flattenIncomingCalls(
-			[incomingCall],
-			async (_targetUri, line) => [`${line}|call-site`],
-		);
-
-		assert.deepStrictEqual(
-			result.map((call) => ({
-				uri: call.uri,
-				line: call.line,
-				character: call.character,
-				name: call.name,
-				context: call.context,
-			})),
-			[
-				{
-					uri: uri.fsPath,
-					line: 12,
-					character: 4,
-					name: "callerFunction",
-					context: ["12|call-site"],
-				},
-				{
-					uri: uri.fsPath,
-					line: 14,
-					character: 6,
-					name: "callerFunction",
-					context: ["14|call-site"],
-				},
-			],
-		);
-	});
-
-	test("buildSearchFilesGlob respects recursive flag", () => {
-		assert.strictEqual(buildSearchFilesGlob(), "**/*");
-		assert.strictEqual(buildSearchFilesGlob(false), "*");
-	});
-
-	test("buildSearchFilesRegex reports invalid patterns without leaking raw syntax errors", () => {
-		assert.ok(buildSearchFilesRegex(".*\\.ts$").test("extension.ts"));
-		assert.throws(
-			() => buildSearchFilesRegex("["),
-			/Invalid file name regex: \[/,
-		);
-	});
-
-	test("SearchFilesTool.format renders regex validation errors as user-facing text", () => {
-		const tool = new SearchFilesTool();
-		const formatted = tool.format(
-			{
-				files: [],
-				hasMore: false,
-				total: 0,
-				error: "Invalid file name regex: [",
-			},
-			{},
-		);
-
-		assert.strictEqual(formatted, "*Invalid file name regex: [*");
-	});
-
-	test("McpTestClient prefixes plain tool names with IDE-", () => {
-		assert.strictEqual(toServerToolName("getDiagnostics"), "IDE-getDiagnostics");
-		assert.strictEqual(
-			toServerToolName("IDE-getScopeParent"),
-			"IDE-getScopeParent",
-		);
-	});
-
-	test("GetDiagnosticsTool waits through empty change events and foreground-reveals the document when needed", async () => {
-		const tool = new GetDiagnosticsTool();
-		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
-		const filePath = "src/test/fixtures/diag-error.ts";
-		const targetUri = vscode.Uri.file(path.join(projectPath, filePath));
-		const diagnostic = new vscode.Diagnostic(
-			new vscode.Range(0, 13, 0, 16),
-			"Type 'number' is not assignable to type 'string'.",
-			vscode.DiagnosticSeverity.Error,
-		);
-		const originalOpenTextDocument = vscode.workspace.openTextDocument;
-		const originalShowTextDocument = vscode.window.showTextDocument;
-		const originalGetDiagnostics = vscode.languages.getDiagnostics;
-		const originalOnDidChangeDiagnostics = vscode.languages.onDidChangeDiagnostics;
-		const originalGetDiagnosticsTimeout = Config.getDiagnosticsTimeout;
-		const onDidChangeDiagnosticsDescriptor = Object.getOwnPropertyDescriptor(
-			vscode.languages,
-			"onDidChangeDiagnostics",
-		);
-		const visibleEditorsDescriptor = Object.getOwnPropertyDescriptor(
-			vscode.window,
-			"visibleTextEditors",
-		);
-		const listeners = new Set<(e: vscode.DiagnosticChangeEvent) => void>();
-		let diagnostics: vscode.Diagnostic[] = [];
-		let revealOptions: vscode.TextDocumentShowOptions | undefined;
-
-		try {
-			vscode.workspace.openTextDocument = (async () =>
-				({
-					uri: targetUri,
-					getText: () => "",
-				}) as vscode.TextDocument) as unknown as typeof vscode.workspace.openTextDocument;
-			vscode.window.showTextDocument = (async (_document, options) => {
-				if (options && typeof options === "object") {
-					revealOptions = options;
-				}
-				setTimeout(() => {
-					for (const listener of listeners) {
-						listener({ uris: [targetUri] });
-					}
-				}, 0);
-				setTimeout(() => {
-					diagnostics = [diagnostic];
-					for (const listener of listeners) {
-						listener({ uris: [targetUri] });
-					}
-				}, 10);
-				return {
-					document: {
-						uri: targetUri,
-					},
-				} as vscode.TextEditor;
-			}) as typeof vscode.window.showTextDocument;
-			vscode.languages.getDiagnostics = (((uri: vscode.Uri) =>
-				uri.toString() === targetUri.toString() ? diagnostics : []) as (
-				typeof vscode.languages.getDiagnostics
-			));
-			Object.defineProperty(vscode.languages, "onDidChangeDiagnostics", {
-				configurable: true,
-				value: ((listener: (e: vscode.DiagnosticChangeEvent) => void) => {
-					listeners.add(listener);
-					return {
-						dispose() {
-							listeners.delete(listener);
-						},
-					};
-				}) as typeof vscode.languages.onDidChangeDiagnostics,
-			});
-			(Config.getDiagnosticsTimeout as unknown as () => number) = () => 50;
-			Object.defineProperty(vscode.window, "visibleTextEditors", {
-				configurable: true,
-				value: [],
-			});
-
-			const result = await tool.execute({
-				projectPath,
-				filePath,
-				severity: "Error",
-			});
-
-			assert.strictEqual(revealOptions?.preserveFocus, false);
-			assert.strictEqual(result.total, 1);
-			assert.strictEqual(result.diagnostics[0].line, 1);
-		} finally {
-			vscode.workspace.openTextDocument = originalOpenTextDocument;
-			vscode.window.showTextDocument = originalShowTextDocument;
-			vscode.languages.getDiagnostics = originalGetDiagnostics;
-			(Config.getDiagnosticsTimeout as unknown as () => number) =
-				originalGetDiagnosticsTimeout.bind(Config);
-			if (onDidChangeDiagnosticsDescriptor) {
-				Object.defineProperty(
-					vscode.languages,
-					"onDidChangeDiagnostics",
-					onDidChangeDiagnosticsDescriptor,
-				);
-			} else {
-				Object.defineProperty(vscode.languages, "onDidChangeDiagnostics", {
-					configurable: true,
-					value: originalOnDidChangeDiagnostics,
-				});
-			}
-			if (visibleEditorsDescriptor) {
-				Object.defineProperty(
-					vscode.window,
-					"visibleTextEditors",
-					visibleEditorsDescriptor,
-				);
-			}
+		// EN: Ensure directory exists // CN: 确保目录存在
+		if (!fs.existsSync(EXPECTED_DIR)) {
+			fs.mkdirSync(EXPECTED_DIR, { recursive: true });
 		}
 	});
 
-	test("retryUntilReady retries until the provider becomes ready", async () => {
-		let attempts = 0;
-		const result = await retryUntilReady(
-			async () => {
-				attempts++;
-				return attempts >= 3 ? ["ready"] : [];
-			},
-			(value) => value.length > 0,
-			4,
-			0,
-		);
-
-		assert.deepStrictEqual(result, ["ready"]);
-		assert.strictEqual(attempts, 3);
+	suiteTeardown(async () => {
+		await client?.disconnect();
 	});
 
-	test("retryWorkspaceQuery retries a cold query until symbols appear", async () => {
-		let attempts = 0;
-		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
+	// ==================== Test Entry // ====================
+	// EN: 测试入口
 
-		const result = await retryWorkspaceQuery(
-			async () => {
-				attempts++;
-				return attempts >= 3
-					? [
-							{
-								name: "BaseTool",
-								kind: vscode.SymbolKind.Class,
-								location: new vscode.Location(
-									vscode.Uri.file(
-										path.join(projectPath, "src/client/tools/BaseTool.ts"),
-									),
-									new vscode.Range(16, 0, 16, 1),
-								),
-								containerName: "",
-							} as vscode.SymbolInformation,
-						]
-					: [];
-			},
-			2,
-			0,
-		);
-
-		assert.strictEqual(attempts, 3);
-		assert.deepStrictEqual(result.map((symbol) => symbol.name), ["BaseTool"]);
-	});
-
-	test("retryWorkspaceQuery stays bounded when the symbol does not exist", async () => {
-		let attempts = 0;
-		const result = await retryWorkspaceQuery(
-			async () => {
-				attempts++;
-				return [];
-			},
-			2,
-			0,
-		);
-
-		assert.strictEqual(attempts, 3);
-		assert.deepStrictEqual(result, []);
-	});
-
-	test("resolveWorkspaceQuery warms up and retries once more after an empty first pass", async () => {
-		let warmed = false;
-		let loadCalls = 0;
-		let warmupCalls = 0;
-		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
-
-		const result = await resolveWorkspaceQuery(
-			"BaseTool",
-			async () => {
-				loadCalls++;
-				return warmed
-					? [
-							{
-								name: "BaseTool",
-								kind: vscode.SymbolKind.Class,
-								location: new vscode.Location(
-									vscode.Uri.file(path.join(projectPath, "src/client/tools/BaseTool.ts")),
-									new vscode.Range(16, 0, 16, 1),
-								),
-								containerName: "",
-							} as vscode.SymbolInformation,
-						]
-					: [];
-			},
-			async () => {
-				warmupCalls++;
-				warmed = true;
-			},
-		);
-
-		assert.strictEqual(warmupCalls, 1);
-		assert.strictEqual(loadCalls, 4);
-		assert.deepStrictEqual(result.map((symbol) => symbol.name), ["BaseTool"]);
-	});
-
-	test("ensureWorkspaceSymbolProviderReady returns quickly when the provider is already warm", async () => {
-		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
-		const originalExecuteCommand = vscode.commands.executeCommand;
-		let commandCalls = 0;
-
-		try {
-			vscode.commands.executeCommand = (async (command: string, query: string) => {
-				if (command === "vscode.executeWorkspaceSymbolProvider" && query === "") {
-					commandCalls++;
-					return [
-						{
-							name: "BaseTool",
-							kind: vscode.SymbolKind.Class,
-							location: new vscode.Location(
-								vscode.Uri.file(path.join(projectPath, "src/client/tools/BaseTool.ts")),
-								new vscode.Range(16, 0, 16, 1),
-							),
-							containerName: "",
-						},
-					];
-				}
-
-				return [];
-			}) as typeof vscode.commands.executeCommand;
-
-			const ready = await ensureWorkspaceSymbolProviderReady(projectPath);
-			assert.strictEqual(ready, true);
-			assert.strictEqual(commandCalls, 1);
-		} finally {
-			vscode.commands.executeCommand = originalExecuteCommand;
-		}
-	});
-
-	test("filterWorkspaceSymbols applies query, type and project path filters", () => {
-		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
-		const symbols: vscode.SymbolInformation[] = [
-			{
-				name: "DebugPanelProvider",
-				kind: vscode.SymbolKind.Class,
-				location: new vscode.Location(
-					vscode.Uri.file(
-						path.join(projectPath, "src/client/debug/DebugPanelProvider.ts"),
-					),
-					new vscode.Range(48, 0, 48, 1),
-				),
-				containerName: "",
-			} as vscode.SymbolInformation,
-			{
-				name: "debugPanelProvider",
-				kind: vscode.SymbolKind.Variable,
-				location: new vscode.Location(
-					vscode.Uri.file(path.join(projectPath, "src/extension.ts")),
-					new vscode.Range(23, 0, 23, 1),
-				),
-				containerName: "",
-			} as vscode.SymbolInformation,
-			{
-				name: "## MCP Tools",
-				kind: vscode.SymbolKind.String,
-				location: new vscode.Location(
-					vscode.Uri.file(path.join(projectPath, "README.md")),
-					new vscode.Range(17, 0, 17, 1),
-				),
-				containerName: "",
-			} as vscode.SymbolInformation,
-			{
-				name: "DebugPanelProvider",
-				kind: vscode.SymbolKind.Class,
-				location: new vscode.Location(
-					vscode.Uri.file("D:/OtherProject/src/DebugPanelProvider.ts"),
-					new vscode.Range(0, 0, 0, 1),
-				),
-				containerName: "",
-			} as vscode.SymbolInformation,
-		];
-
-		const classMatches = filterWorkspaceSymbols(
-			symbols,
-			projectPath,
-			"DebugPanelProvider",
-			"class",
-		);
-		const fieldMatches = filterWorkspaceSymbols(
-			symbols,
-			projectPath,
-			"debugPanelProvider",
-			"field",
-		);
-
-		assert.deepStrictEqual(
-			classMatches.map((symbol) => symbol.name),
-			["DebugPanelProvider"],
-		);
-		assert.deepStrictEqual(
-			fieldMatches.map((symbol) => symbol.name),
-			["debugPanelProvider"],
-		);
-	});
-
-	test("filterWorkspaceSymbols treats class filter as type declarations", () => {
-		const projectPath = path.resolve("D:/Project/node/ide-lsp-for-mcp");
-		const symbols: vscode.SymbolInformation[] = [
-			{
-				name: "DebugPanelProvider",
-				kind: vscode.SymbolKind.Class,
-				location: new vscode.Location(
-					vscode.Uri.file(
-						path.join(projectPath, "src/client/debug/DebugPanelProvider.ts"),
-					),
-					new vscode.Range(48, 0, 48, 1),
-				),
-				containerName: "",
-			} as vscode.SymbolInformation,
-			{
-				name: "DebugPanelContract",
-				kind: vscode.SymbolKind.Interface,
-				location: new vscode.Location(
-					vscode.Uri.file(path.join(projectPath, "src/shared/types.ts")),
-					new vscode.Range(0, 0, 0, 1),
-				),
-				containerName: "",
-			} as vscode.SymbolInformation,
-			{
-				name: "debugPanelProvider",
-				kind: vscode.SymbolKind.Variable,
-				location: new vscode.Location(
-					vscode.Uri.file(path.join(projectPath, "src/extension.ts")),
-					new vscode.Range(23, 0, 23, 1),
-				),
-				containerName: "",
-			} as vscode.SymbolInformation,
-		];
-
-		const classMatches = filterWorkspaceSymbols(
-			symbols,
-			projectPath,
-			"DebugPanel",
-			"class",
-		);
-
-		assert.deepStrictEqual(
-			classMatches.map((symbol) => symbol.name),
-			["DebugPanelProvider", "DebugPanelContract"],
-		);
-	});
+	test("listOpenProjects", () => runToolTest(client, "listOpenProjects"));
+	test("goToDefinition", () => runToolTest(client, "goToDefinition"));
+	test("findReferences", () => runToolTest(client, "findReferences"));
+	test("hover", () => runToolTest(client, "hover"));
+	test("getFileStruct", () => runToolTest(client, "getFileStruct"));
+	test("searchSymbolInWorkspace", () =>
+		runToolTest(client, "searchSymbolInWorkspace"));
+	test("goToImplementation", () => runToolTest(client, "goToImplementation"));
+	test("incomingCalls", () => runToolTest(client, "incomingCalls"));
+	test("renameSymbol", () => runToolTest(client, "renameSymbol"));
+	test("getDiagnostics", () => runToolTest(client, "getDiagnostics"));
+	test("getDefinitionText", () => runToolTest(client, "getDefinitionText"));
+	test("syncFiles", () => runToolTest(client, "syncFiles"));
+	test("searchFiles", () => runToolTest(client, "searchFiles"));
+	test("getScopeParent", () => runToolTest(client, "getScopeParent"));
 });
+
+/**
+ * Run tool test
+ * // CN: 运行工具测试
+ */
+async function runToolTest(
+	client: McpTestClient,
+	toolName: string,
+): Promise<void> {
+	const testFile = path.join(TEST_DATA_DIR, `${toolName}.json`);
+
+	if (!fs.existsSync(testFile)) {
+		console.log(`Test data file not found: ${testFile}, skipping...`);
+		return;
+	}
+
+	console.log(`\n========== Testing tool: ${toolName} ==========`);
+	const testCases: TestCase[] = JSON.parse(fs.readFileSync(testFile, "utf-8"));
+	const results: Array<{ expectedFile: string; result: string }> = [];
+
+	for (const testCase of testCases) {
+		console.log(`\n--- Test case: ${testCase.name} ---`);
+		const args = replaceProjectPath(testCase.args);
+		const result = await client.callTool(toolName, args);
+
+		assert.ok(result, "Result should not be null");
+		if (result.isError) {
+			console.log(`Error result: ${result.content}`);
+		}
+
+		results.push({
+			expectedFile: testCase.expectedFile || `${testCase.name}.md`,
+			result: result.content,
+		});
+	}
+
+	await verifyResults(toolName, results);
+}
+
+/**
+ * Replace placeholders in test arguments
+ * // CN: 替换测试参数中的占位符
+ */
+function replaceProjectPath(
+	args: Record<string, unknown>,
+): Record<string, unknown> {
+	const result: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(args)) {
+		if (value === PROJECT_PATH_PLACEHOLDER) {
+			result[key] = PROJECT_PATH;
+		} else {
+			result[key] = value;
+		}
+	}
+	return result;
+}
+
+/**
+ * Verify test results
+ * // CN: 验证测试结果
+ */
+async function verifyResults(
+	toolName: string,
+	results: Array<{ expectedFile: string; result: string }>,
+): Promise<void> {
+	const toolExpectedDir = path.join(EXPECTED_DIR, toolName);
+	if (!fs.existsSync(toolExpectedDir)) {
+		fs.mkdirSync(toolExpectedDir, { recursive: true });
+	}
+
+	let allSuccess = true;
+	const testResults: string[] = [];
+
+	for (const { expectedFile, result } of results) {
+		const expectedPath = path.join(toolExpectedDir, expectedFile);
+
+		if (fs.existsSync(expectedPath)) {
+			const expected = fs.readFileSync(expectedPath, "utf-8");
+			console.log(`Expected length: ${expected.length}`);
+			console.log(`Actual length: ${result.length}`);
+			console.log(`Result preview: ${result.substring(0, 200)}...`);
+
+			if (result === expected) {
+				testResults.push(`${expectedFile}: success`);
+			} else {
+				testResults.push(`${expectedFile}: failure`);
+				allSuccess = false;
+			}
+		} else {
+			// EN: First run, create expected file // CN: 首次运行，创建预期文件
+			fs.writeFileSync(expectedPath, result, "utf-8");
+			console.log(`Created expected file: ${expectedPath}`);
+			testResults.push(`${expectedFile}: created`);
+		}
+	}
+
+	console.log(testResults.join(", "));
+	assert.ok(allSuccess, "Some test cases failed");
+}

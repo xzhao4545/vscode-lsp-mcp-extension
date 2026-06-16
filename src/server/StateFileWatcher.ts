@@ -1,5 +1,6 @@
 /**
- * 状态文件监听器 - 服务器端监听状态文件变化
+ * StateFileWatcher - Server-side state file change listener
+ * // CN: 状态文件监听器 - 服务器端监听状态文件变化
  */
 
 import * as fs from "node:fs";
@@ -8,7 +9,8 @@ import type { ServerStateData } from "../shared/types";
 import { StateUtils } from "../shared/types";
 
 /**
- * 状态文件监听器
+ * StateFileWatcher constructor
+ * // CN: 状态文件监听器
  */
 export class StateFileWatcher {
 	private watcher: fs.FSWatcher | null = null;
@@ -21,7 +23,8 @@ export class StateFileWatcher {
 	) {}
 
 	/**
-	 * 开始监听
+	 * Start watching
+	 * // CN: 开始监听
 	 */
 	start(): void {
 		const stateFilePath = this.stateFile.getPath();
@@ -33,12 +36,13 @@ export class StateFileWatcher {
 				}
 			});
 		} catch {
-			// 文件可能不存在，忽略
+			// File may not exist, ignore // CN: 文件可能不存在，忽略
 		}
 	}
 
 	/**
-	 * 检查是否应该关闭
+	 * Check if should shutdown
+	 * // CN: 检查是否应该关闭
 	 */
 	private async checkShouldShutdown(): Promise<void> {
 		if (this.shuttingDown) {
@@ -63,12 +67,13 @@ export class StateFileWatcher {
 				await this.onShouldShutdown();
 			}
 		} catch {
-			// 文件读取失败，忽略
+			// File read failed, ignore // CN: 文件读取失败，忽略
 		}
 	}
 
 	/**
-	 * 停止监听
+	 * Stop watching
+	 * // CN: 停止监听
 	 */
 	stop(): void {
 		this.watcher?.close();

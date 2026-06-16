@@ -18,7 +18,8 @@ interface RenameSymbolResult {
 }
 
 /**
- * RenameSymbol - 重命名
+ * RenameSymbolTool - Rename symbol
+ * // CN: 重命名
  */
 export class RenameSymbolTool extends BaseTool {
 	readonly name = "renameSymbol";
@@ -35,7 +36,7 @@ export class RenameSymbolTool extends BaseTool {
 		const newName = args.newName as string;
 		const symbolName = args.symbolName as string;
 
-		// 验证 symbol
+		// EN: Validate symbol // CN: 验证 symbol
 		const validation = await SymbolValidator.validate(
 			uri,
 			position,
