@@ -10,7 +10,8 @@ interface HoverResult {
 }
 
 /**
- * Hover - 悬停信息
+ * HoverTool - Hover information
+ * // CN: 悬停信息
  */
 export class HoverTool extends BaseTool {
 	readonly name = "hover";
@@ -26,7 +27,7 @@ export class HoverTool extends BaseTool {
 		);
 		const symbolName = args.symbolName as string;
 
-		// 验证 symbol
+		// EN: Validate symbol // CN: 验证 symbol
 		const validation = await SymbolValidator.validate(
 			uri,
 			position,

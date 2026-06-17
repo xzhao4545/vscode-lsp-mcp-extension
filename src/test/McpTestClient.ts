@@ -1,7 +1,9 @@
 /**
- * MCP 测试客户端
+ * MCP Test Client
  *
- * 使用官方 @modelcontextprotocol/sdk 连接 MCP 服务器，用于集成测试。
+ * Uses official @modelcontextprotocol/sdk to connect to MCP server for integration testing
+ * // CN: MCP 测试客户端
+ * // CN: 使用官方 @modelcontextprotocol/sdk 连接 MCP 服务器，用于集成测试。
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -49,7 +51,8 @@ export class McpTestClient {
 	}
 
 	/**
-	 * 检查服务器是否运行
+	 * Check if server is running
+	 * // CN: 检查服务器是否运行
 	 */
 	async isServerRunning(): Promise<boolean> {
 		try {
@@ -63,7 +66,8 @@ export class McpTestClient {
 	}
 
 	/**
-	 * 连接到 MCP 服务器
+	 * Connect to MCP server
+	 * // CN: 连接到 MCP 服务器
 	 */
 	async connect(): Promise<void> {
 		const start = Date.now();
@@ -82,7 +86,8 @@ export class McpTestClient {
 	}
 
 	/**
-	 * 断开连接
+	 * Disconnect
+	 * // CN: 断开连接
 	 */
 	async disconnect(): Promise<void> {
 		await this.client.close();
@@ -91,7 +96,8 @@ export class McpTestClient {
 	}
 
 	/**
-	 * 调用 MCP 工具
+	 * Call MCP tool
+	 * // CN: 调用 MCP 工具
 	 */
 	async callTool(
 		toolName: string,
@@ -108,7 +114,7 @@ export class McpTestClient {
 				arguments: args,
 			});
 
-			// 提取文本内容
+			// EN: Extract text content // CN: 提取文本内容
 			const contentArray = result.content as Array<{
 				type: string;
 				text?: string;

@@ -54,7 +54,8 @@ export async function flattenIncomingCalls(
 }
 
 /**
- * IncomingCalls - 查找调用者
+ * IncomingCallsTool - Find callers
+ * // CN: 查找调用者
  */
 export class IncomingCallsTool extends BaseTool {
 	readonly name = "incomingCalls";
@@ -70,7 +71,7 @@ export class IncomingCallsTool extends BaseTool {
 		);
 		const symbolName = args.symbolName as string;
 
-		// 验证 symbol
+		// EN: Validate symbol // CN: 验证 symbol
 		const validation = await SymbolValidator.validate(
 			uri,
 			position,
@@ -128,7 +129,7 @@ export class IncomingCallsTool extends BaseTool {
 		const page = (args.page as number) || 1;
 		const paginated = PaginationHelper.paginate(result.incomingCalls, page);
 
-		// 按 URI 聚合
+		// EN: Group by URI // CN: 按 URI 聚合
 		const grouped = new Map<string, IncomingCall[]>();
 		for (const cal of paginated.items) {
 			const cals = grouped.get(cal.uri) || [];

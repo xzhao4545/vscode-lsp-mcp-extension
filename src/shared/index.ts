@@ -1,5 +1,6 @@
 /**
- * shared 模块导出
+ * Shared module exports
+ * // CN: shared 模块导出
  */
 
 export * from "./constants";

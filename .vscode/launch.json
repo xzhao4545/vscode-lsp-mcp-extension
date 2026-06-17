@@ -1,7 +1,7 @@
 // A launch configuration that compiles the extension and then opens it inside a new window
 // Use IntelliSense to learn about possible attributes.
 // Hover to view descriptions of existing attributes.
-// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+// For more information, visit: https://go.microsoft.com/fwlink/?LinkId=830387
 {
 	"version": "0.2.0",
 	"configurations": [
@@ -13,12 +13,13 @@
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"env": {
-				"NODE_OPTIONS":"--enable-source-maps"
+				"NODE_OPTIONS": "--enable-source-maps"
 			},
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			],
-			"preLaunchTask": "${defaultBuildTask}"
+			"preLaunchTask": "compile",
+			"runtimeExecutable": "${execPath}"
 		},
 		{
 			"name": "Run Extension Without Server",
@@ -29,12 +30,55 @@
 			],
 			"env": {
 				"IDE_LSP_MCP_DISABLE_AUTO_START": "true",
-				"NODE_OPTIONS":"--enable-source-maps"
+				"NODE_OPTIONS": "--enable-source-maps"
 			},
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			],
-			"preLaunchTask": "${defaultBuildTask}"
+			"preLaunchTask": "compile",
+			"runtimeExecutable": "${execPath}"
+		},
+		{
+			"name": "Debug Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"env": {
+				"NODE_OPTIONS": "--enable-source-maps --inspect-brk=9229"
+			},
+			"outFiles": [
+				"${workspaceFolder}/dist/**/*.js"
+			],
+			"preLaunchTask": "compile",
+			"runtimeExecutable": "${execPath}"
+		},
+		{
+			"name": "Debug Server",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"runtimeExecutable": "node",
+			"runtimeArgs": [
+				"--enable-source-maps",
+				"dist/server/main.js"
+			],
+			"env": {
+				"IDE_LSP_MCP_DEBUG": "true"
+			},
+			"preLaunchTask": "server:build",
+			"console": "integratedTerminal"
+		}
+	],
+	"compounds": [
+		{
+			"name": "Full Dev",
+			"configurations": [
+				"Run Extension",
+				"Debug Server"
+			],
+			"stopAll": true
 		}
 	]
 }
